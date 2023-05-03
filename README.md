@@ -22,16 +22,20 @@ The setup for the React app is based off
 
 #### Installation
 
+
 The front end relies on NodeJS (to compile and run the JavaScript files), NPM (a
 package manager for NodeJS applications) and React, as well as some other
-packages used to build and serve the files. First, you will need to install
-NodeJS:
+packages used to build and serve the files. FThere are a few ways to install NodeJS and NPM. Using `nvm` is easy and recommended. To install it, use the [install script](https://github.com/nvm-sh/nvm#install--update-script):
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-sudo apt-get install -y nodejs
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
 ```
-Now you should have the `npm` command installed. In the root directory of this
-repository, run:
+You will have to open a new terminal after installation for the `nvm` command to be available. Install the latest version of NodeJS (as of this writing, the latest version is 18):
+```bash
+nvm install 18
+```
+Now you should have the `node` and `npm` command installed. You can check with `node --version` and `npm --version`.
+
+To setup this project, in the root directory of this repository, run:
 ```bash
 npm install
 ```
