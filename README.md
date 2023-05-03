@@ -119,9 +119,10 @@ cd lcm-1.4.0/lcm-pythoninst
 python setup.py install
 ```
 
-Install the LCM messages by building the `botlab-soln` repo, and then installing with:
+Install the LCM messages by building the `mbot_lcm_msgs` repo, and then installing with:
 ```bash
 cd build
+cmake .. && make
 sudo make install
 ```
 
