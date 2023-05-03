@@ -1,22 +1,17 @@
 import lcm
+import time
+import select
 
-from mbot_lcm_msgs import omni_motor_command_t
+from mbot_lcm_msgs import twist2D_t
 from mbot_lcm_msgs import occupancy_grid_t
 from mbot_lcm_msgs import particles_t
-from mbot_lcm_msgs import pose_xyt_t
-from mbot_lcm_msgs import exploration_status_t
-from mbot_lcm_msgs import reset_odometry_t
-from mbot_lcm_msgs import mbot_state_t
+from mbot_lcm_msgs import pose2D_t
 from mbot_lcm_msgs import lidar_t
-from mbot_lcm_msgs import planner_request_t
-from mbot_lcm_msgs import robot_path_t
-from mbot_lcm_msgs import mbot_system_reset_t
+# from mbot_lcm_msgs import planner_request_t
+from mbot_lcm_msgs import path2D_t
+from mbot_lcm_msgs import mbot_slam_reset_t
 # from mbot_lcm_msgs import costmap_t
 from app import lcm_settings
-
-import time
-import sys
-import select
 
 
 class LcmCommunicationManager:
@@ -37,8 +32,6 @@ class LcmCommunicationManager:
         # TODO: VERIFY AND FIX - ENSURE DATA IS SAVED
         self.__subscribe(lcm_settings.SLAM_MAP_CHANNEL, self._occupancy_grid_listener)
         self.__subscribe(lcm_settings.ODOMETRY_CHANNEL, self._position_listener)
-        self.__subscribe(lcm_settings.EXPLORATION_STATUS_CHANNEL, self._exploration_status_listener)
-        self.__subscribe(lcm_settings.FULL_STATE_CHANNEL, self.mbot_state_listener)
         self.__subscribe(lcm_settings.LIDAR_CHANNEL, self.lidar_listener)
         self.__subscribe(lcm_settings.SLAM_POSE_CHANNEL, self.pose_listener)
         self.__subscribe(lcm_settings.CONTROLLER_PATH_CHANNEL, self.path_listener)
@@ -72,30 +65,31 @@ class LcmCommunicationManager:
             self._callback_dict[channel].emit()
 
     def publish_motor_commands(self, vx, vy, wz):
-        cmd = omni_motor_command_t()
+        cmd = twist2D_t()
         cmd.vx = vx; cmd.vy = vy; cmd.wz = wz
         cmd.utime = int(time.time() * 1000)
         self._lcm.publish(lcm_settings.MBOT_MOTOR_COMMAND_CHANNEL, cmd.encode())
 
-    def publish_plan_data(self, goal:pose_xyt_t, plan:bool):
-        goal_pose = pose_xyt_t()
-        goal_pose.utime = int(time.time() * 1000)
-        goal_pose.x = float(goal[0])
-        goal_pose.y = float(goal[1])
-        goal_pose.theta = 0.0
+    def publish_plan_data(self, goal: pose2D_t, plan: bool):
+        pass  # TODO
+        # goal_pose = pose2D_t()
+        # goal_pose.utime = int(time.time() * 1000)
+        # goal_pose.x = float(goal[0])
+        # goal_pose.y = float(goal[1])
+        # goal_pose.theta = 0.0
 
-        total_pose = planner_request_t()
-        total_pose.utime = int(time.time() * 1000)
-        total_pose.goal = goal_pose
-        total_pose.require_plan = plan
+        # total_pose = planner_request_t()
+        # total_pose.utime = int(time.time() * 1000)
+        # total_pose.goal = goal_pose
+        # total_pose.require_plan = plan
 
-        self._lcm.publish(lcm_settings.PATH_REQUEST, total_pose.encode())
+        # self._lcm.publish(lcm_settings.PATH_REQUEST, total_pose.encode())
 
     def publish_slam_reset(self, mode, map_file=None, retain_pose=False):
         # Reset the map manager so it does not continue to send old maps.
         self._callback_dict[lcm_settings.SLAM_MAP_CHANNEL].reset()
 
-        slam_reset = mbot_system_reset_t()
+        slam_reset = mbot_slam_reset_t()
         slam_reset.utime = int(time.time() * 1000)
         slam_reset.slam_mode = int(mode)
         slam_reset.retain_pose = retain_pose
@@ -105,25 +99,15 @@ class LcmCommunicationManager:
         self._lcm.publish(lcm_settings.MBOT_SYSTEM_RESET, slam_reset.encode())
 
     def reset_odometry_publisher(self):
-        cmd=reset_odometry_t()
-        cmd.x=0.0
-        cmd.y=0.0
-        cmd.theta=0.0
+        cmd = pose2D_t()
+        cmd.x = 0.0
+        cmd.y = 0.0
+        cmd.theta = 0.0
 
         self._lcm.publish(lcm_settings.RESET_ODOMETRY_CHANNEL, cmd.encode())
 
     def _position_listener(self, channel, data):
-        decoded_data = pose_xyt_t.decode(data)
-        if channel in self._callback_dict.keys():
-            self._callback_dict[channel](decoded_data)
-
-    def _exploration_status_listener(self, channel, data):
-        decoded_data = exploration_status_t.decode(data)
-        if channel in self._callback_dict.keys():
-            self._callback_dict[channel](decoded_data)
-
-    def mbot_state_listener(self, channel, data):
-        decoded_data = mbot_state_t.decode(data)
+        decoded_data = pose2D_t.decode(data)
         if channel in self._callback_dict.keys():
             self._callback_dict[channel](decoded_data)
 
@@ -145,12 +129,12 @@ class LcmCommunicationManager:
             self._callback_dict[channel](decoded_data)
 
     def pose_listener(self, channel, data):
-        decoded_data = pose_xyt_t.decode(data)
+        decoded_data = pose2D_t.decode(data)
         if channel in self._callback_dict.keys():
             self._callback_dict[channel](decoded_data)
 
     def path_listener(self, channel, data):
-        decoded_data = robot_path_t.decode(data)
+        decoded_data = path2D_t.decode(data)
         if channel in self._callback_dict.keys():
             self._callback_dict[channel](decoded_data)
 
