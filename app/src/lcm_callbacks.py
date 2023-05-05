@@ -27,8 +27,8 @@ class OccupancyGridEmitter():
             "height" : self.__map.height,
             "num_cells" : self.__map.num_cells,
             "cells" : cells,
-            "slam_mode" : self.__map.slam_mode,
-            "slam_map_location" : self.__map.slam_map_location
+            # "slam_mode" : self.__map.slam_mode,
+            # "slam_map_location" : self.__map.slam_map_location
         }
 
     def __compute_update(self, new_cells):

@@ -110,7 +110,7 @@ class MBotApp extends React.Component {
       mapfile: null,
       goalCell: [],
       goalValid: true,
-      localMapFileLocation: "current.map",
+      // localMapFileLocation: "current.map",
       // Mode variables.
       slamMode: config.slam_mode.IDLE,
       drivingMode: false,
@@ -219,6 +219,7 @@ class MBotApp extends React.Component {
   }
 
   onMappingMode() {
+    console.log(this.state.slamMode);
     if (this.state.slamMode === config.slam_mode.FULL_SLAM) {
       // If we're in full slam, we need to reset the robot to localization only mode.
       this.ws.socket.emit('reset', {'mode' : config.slam_mode.LOCALIZATION_ONLY, 'retain_pose' : true});
@@ -451,9 +452,7 @@ class MBotApp extends React.Component {
                    pixelsPerMeter: config.MAP_DISPLAY_WIDTH / (result.width * result.meters_per_cell),
                    mapLoaded: loaded,
                    path: [],
-                   goalCell: [],
-                   slamMode: result.slam_mode,
-                   localMapFileLocation: result.slam_map_location});
+                   goalCell: []});
   }
 
   resetMapData() {
