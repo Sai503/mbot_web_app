@@ -22,11 +22,23 @@ import { DriveControlPanel } from "./driveControls";
 function StatusMessage(props) {
   var msg = [];
   if(props.robotPose[0] != null){
-    msg.push(<p className="robot-info"><i>Robot Pose:</i> (<b>x:</b> {props.robotPose[0]}, <b>y:</b>  {props.robotPose[1]}, <b>t:</b>  {props.robotPose[2]})</p>);
-    msg.push(<p className="robot-info"><i>Robot Cell:</i> ({props.robotCell[0]}, {props.robotCell[1]})</p>);
+    msg.push(
+      <p className="robot-info" key="robotInfoPose">
+        <i>Robot Pose:</i> (<b>x:</b> {props.robotPose[0]}, <b>y:</b>  {props.robotPose[1]}, <b>t:</b>  {props.robotPose[2]})
+      </p>
+    );
+    msg.push(
+      <p className="robot-info" key="robotInfoCell">
+        <i>Robot Cell:</i> ({props.robotCell[0]}, {props.robotCell[1]})
+      </p>
+  );
   }
   if (props.clickedCell.length > 0) {
-    msg.push(<p className="robot-info"><i>Clicked:</i> Meters [{props.posClickedCell[0]}, {props.posClickedCell[1]}], Cell: [{props.clickedCell[0]}, {props.clickedCell[1]}]</p>);
+    msg.push(
+      <p className="robot-info" key="robotInfoClicked">
+        <i>Clicked:</i> Meters [{props.posClickedCell[0]}, {props.posClickedCell[1]}], Cell: [{props.clickedCell[0]}, {props.clickedCell[1]}]
+      </p>
+    );
   }
 
   return (
@@ -642,8 +654,8 @@ class MBotApp extends React.Component {
           </div>
             <div className="status-wrapper">
               <ConnectionStatus status={this.state.connection}/>
-              <StatusMessage robotCell={this.pixelsToCell(this.state.x, this.state.y)} 
-                             robotPose={[this.state.poseX, this.state.poseY, this.state.poseTheta]} 
+              <StatusMessage robotCell={this.pixelsToCell(this.state.x, this.state.y)}
+                             robotPose={[this.state.poseX, this.state.poseY, this.state.poseTheta]}
                              posClickedCell={this.state.posClickedCell} clickedCell={this.state.clickedCell} />
             </div>
 
