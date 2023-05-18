@@ -10,6 +10,7 @@ from mbot_lcm_msgs import lidar_t
 # from mbot_lcm_msgs import planner_request_t
 from mbot_lcm_msgs import path2D_t
 from mbot_lcm_msgs import mbot_slam_reset_t
+from mbot_lcm_msgs import slam_status_t
 # from mbot_lcm_msgs import costmap_t
 from app import lcm_settings
 
@@ -36,6 +37,7 @@ class LcmCommunicationManager:
         self.__subscribe(lcm_settings.SLAM_POSE_CHANNEL, self.pose_listener)
         self.__subscribe(lcm_settings.CONTROLLER_PATH_CHANNEL, self.path_listener)
         self.__subscribe(lcm_settings.SLAM_PARTICLES_CHANNEL, self.particle_listener)
+        self.__subscribe(lcm_settings.SLAM_STATUS_CHANNEL, self.slam_status_listener)
         # self.__subscribe(lcm_settings.COSTMAP_CHANNEL, self.obstacle_listener)
         ###################################
 
@@ -140,5 +142,10 @@ class LcmCommunicationManager:
 
     def particle_listener(self, channel, data):
         decoded_data = particles_t.decode(data)
+        if channel in self._callback_dict.keys():
+            self._callback_dict[channel](decoded_data)
+
+    def slam_status_listener(self, channel, data):
+        decoded_data = slam_status_t.decode(data)
         if channel in self._callback_dict.keys():
             self._callback_dict[channel](decoded_data)

@@ -3,7 +3,15 @@ from flask_socketio import SocketIO
 from flask_cors import CORS
 from app.src import lcm_settings
 from app.src.lcm_manager import LcmCommunicationManager
-from app.src.lcm_callbacks import LidarEmitter, CostmapEmitter, OccupancyGridEmitter, PoseEmitter, PathEmitter, ParticleEmitter
+from app.src.lcm_callbacks import (
+    LidarEmitter,
+    CostmapEmitter,
+    OccupancyGridEmitter,
+    PoseEmitter,
+    PathEmitter,
+    ParticleEmitter,
+    SLAMStatusEmitter
+)
 
 
 class ConnectionManager(object):
@@ -25,6 +33,7 @@ lcm_callback_dict = {
     lcm_settings.SLAM_POSE_CHANNEL: PoseEmitter(socket, 'pose', period=0.5),
     lcm_settings.CONTROLLER_PATH_CHANNEL: PathEmitter(socket, 'path', period=0.5),
     lcm_settings.SLAM_PARTICLES_CHANNEL: ParticleEmitter(socket, 'particles', period=0.5),
+    lcm_settings.SLAM_STATUS_CHANNEL: SLAMStatusEmitter(socket, 'slam_status', period=0.5),
     lcm_settings.COSTMAP_CHANNEL: CostmapEmitter(socket, 'obstacles', period=0.5)
 }
 

@@ -236,6 +236,37 @@ class ParticleEmitter():
         self.__lock.release()
 
 
+class SLAMStatusEmitter():
+    def __init__(self, socket, event_name, period):
+        self.__socket           = socket
+        self.__event_name       = event_name
+        self.__period           = period
+        self.__status_available = False
+        self.__status           = None
+
+        self.__lock   = threading.Lock()
+
+    def __lcm_status_to_dict(self):
+        return {
+            "utime" : self.__status.utime,
+            "slam_mode" : self.__status.slam_mode,
+            "map_path" : self.__status.map_path
+        }
+
+    def emit(self):
+        if self.__status_available:
+            self.__lock.acquire()
+            self.__socket.emit(self.__event_name, self.__lcm_status_to_dict())
+            self.__status_available = False
+            self.__lock.release()
+
+    def __call__(self, data):
+        self.__lock.acquire()
+        self.__status = data
+        self.__status_available = True
+        self.__lock.release()
+
+
 class CostmapEmitter():
     def __init__(self, socket, event_name, period):
         self.__socket           = socket
