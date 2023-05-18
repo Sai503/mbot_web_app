@@ -10,12 +10,11 @@ if [ -f "/etc/nginx/sites-enabled/default" ]; then
     sudo rm /etc/nginx/sites-enabled/default
 fi
 
-# Create directory for mbot persistent storage api
-sudo mkdir -p /data/www/mbot
-
 # Create the directory for the mbot web application
-sudo mkdir -p /data/www/mbot/
-sudo chmod -R a+rwx /data/www/mbot
+if [ ! -d "/data/www/mbot/" ]; then
+    sudo mkdir -p /data/www/mbot/
+    sudo chmod -R a+rwx /data/www/mbot
+fi
 
 echo
 echo "Setting up Nginx"
@@ -38,29 +37,55 @@ echo
 # Move the build files into the public repo.
 sudo cp -r dist/* /data/www/mbot/
 
-echo "#############################"
 echo "Restarting Nginx..."
-echo "#############################"
+echo
 sudo systemctl restart nginx
 
-# now we can setup the api
-# TODO: This should be installed in a venv, LCM messages will also need to be
-# installed there. The service should run in the venv.
-# echo "#############################"
-# echo "Installing Python dependencies..."
-# echo "#############################"
-# # TODO do this in a venv
-# sudo pip3 install -r requirements.txt
+echo "#############################"
+echo "Setting up Python server..."
+echo "#############################"
 
-# sudo mkdir /data/www/mbot/api
-# sudo cp mbot_omni_app.py /data/www/mbot/api
-# sudo cp -r app/ /data/www/mbot/api
+MBOT_APP_ENV="/home/$USER/envs/mbot-app-env/"
 
-# sudo cp config/mbot-web-server.service /etc/systemd/system/
+# Create a new env if applicable
+if [ ! -d $MBOT_APP_ENV ]; then
+    python3.10 -m venv $MBOT_APP_ENV
+fi
 
-# sudo systemctl daemon-reload
-# sudo systemctl enable mbot-web-server.service
-# sudo systemctl start mbot-web-server.service
+# Activate the environment.
+source $MBOT_APP_ENV/bin/activate
+
+echo
+echo "Installing Python dependencies..."
+echo
+
+pip install --upgrade pip
+pip install -r requirements.txt
+# Copy messages and LCM into this environment. TODO: Fix this.
+cp -r /usr/local/lib/python3.10/dist-packages/mbot_lcm_msgs $MBOT_APP_ENV/lib/python3.10/site-packages/
+cp -r /usr/local/lib/python3.10/dist-packages/lcm $MBOT_APP_ENV/lib/python3.10/site-packages/
+
+# Deactivate becayse we're done with the env now.
+deactivate
+
+echo
+echo "Setting up server files."
+
+if [ ! -d "/data/www/mbot/api" ]; then
+    sudo mkdir /data/www/mbot/api
+fi
+
+# Copy over all the needed Python code.
+sudo cp mbot_omni_app.py /data/www/mbot/api
+sudo cp -r app/ /data/www/mbot/api
+
+echo "Setting up service."
+sudo cp config/mbot-web-server.service /etc/systemd/system/
+
+# Reload the service.
+sudo systemctl daemon-reload
+sudo systemctl enable mbot-web-server.service
+sudo systemctl start mbot-web-server.service
 
 echo
 echo "Done! The webapp is now available at http://localhost"
