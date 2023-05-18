@@ -152,6 +152,7 @@ class MBotApp extends React.Component {
     this.ws.handlePose = (evt) => { this.handlePoses(evt)};
     this.ws.handlePath = (evt) => { this.handlePaths(evt)}
     this.ws.handleParticle = (evt) => { this.handleParticles(evt)};
+    this.ws.handleSLAMStatus = (evt) => { this.handleSLAMStatus(evt)};
     this.ws.handleObstacle = (evt) => { this.handleObstacles(evt)};
 
     this.visitGrid = new GridCellCanvas();
@@ -400,6 +401,23 @@ class MBotApp extends React.Component {
     this.setState({drawParticles: updated_pixels});
   }
 
+  handleSLAMStatus(evt){
+    // Only update if the mode has changed.
+    if (evt.slam_mode !== this.state.slamMode) {
+      if (evt.slam_mode !== config.slam_mode.FULL_SLAM) {
+        // If we are not in mapping mode, stop asking for map.
+        this.stopRequestInterval();
+      }
+      else {
+        // If we are in mapping mode, start asking for map.
+        this.startRequestInterval();
+      }
+
+      this.setState({slamMode: evt.slam_mode,
+                     localMapFileLocation: evt.map_path});
+    }
+  }
+
   handleObstacles(evt){
     var updated_path = [];
     for(let i = 0; i < evt.distances.length; i++)
@@ -434,15 +452,6 @@ class MBotApp extends React.Component {
     }
 
     this.mapCells = new_cells;
-
-    if (result.slam_mode !== config.slam_mode.FULL_SLAM) {
-      // If we are not in mapping mode, stop asking for map.
-      this.stopRequestInterval();
-    }
-    else {
-      // If we are in mapping mode, start asking for map.
-      this.startRequestInterval();
-    }
 
     this.setState({width: result.width,
                    height: result.height,
