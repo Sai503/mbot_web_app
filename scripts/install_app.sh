@@ -1,29 +1,6 @@
 #!/bin/bash
 set -e  # Quit on error.
 
-echo "Installing Nginx..."
-echo
-sudo apt install nginx -y
-
-# Remove default nginx config
-if [ -f "/etc/nginx/sites-enabled/default" ]; then
-    sudo rm /etc/nginx/sites-enabled/default
-fi
-
-# Create the directory for the mbot web application
-if [ ! -d "/data/www/mbot/" ]; then
-    sudo mkdir -p /data/www/mbot/
-    sudo chmod -R a+rwx /data/www/mbot
-fi
-
-echo
-echo "Setting up Nginx"
-echo
-if [ -f "/etc/nginx/nginx.conf" ]; then
-    sudo rm /etc/nginx/nginx.conf
-fi
-sudo cp config/nginx.conf /etc/nginx/nginx.conf
-
 # Build the webapp.
 echo "#############################"
 echo "Building the webapp..."
@@ -49,11 +26,24 @@ MBOT_APP_ENV="/home/$USER/envs/mbot-app-env/"
 
 # Create a new env if applicable
 if [ ! -d $MBOT_APP_ENV ]; then
-    python3.10 -m venv $MBOT_APP_ENV
+    python3 -m venv $MBOT_APP_ENV
 fi
+
+# Before activating, get the Python path where the LCM packages are installed.
+ROOT_PYTHON_PKG_PATH=$(python -c "if True:
+  import sysconfig as sc
+  print(sc.get_path('platlib'))")
+LCM_PATH=$(python -c "if True:
+  import lcm
+  print(lcm.__path__[0])")
 
 # Activate the environment.
 source $MBOT_APP_ENV/bin/activate
+
+# After activating, get the Python path where packages are installed in the env.
+ENV_PYTHON_PKG_PATH=$(python -c "if True:
+  import sysconfig as sc
+  print(sc.get_path('platlib'))")
 
 echo
 echo "Installing Python dependencies..."
@@ -62,8 +52,8 @@ echo
 pip install --upgrade pip
 pip install -r requirements.txt
 # Copy messages and LCM into this environment. TODO: Fix this.
-cp -r /usr/local/lib/python3.10/dist-packages/mbot_lcm_msgs $MBOT_APP_ENV/lib/python3.10/site-packages/
-cp -r /usr/local/lib/python3.10/dist-packages/lcm $MBOT_APP_ENV/lib/python3.10/site-packages/
+rsync -av --exclude='*.pyc' --exclude='*/__pycache__/' $ROOT_PYTHON_PKG_PATH/mbot_lcm_msgs $ENV_PYTHON_PKG_PATH
+rsync -av --exclude='*.pyc' --exclude='*/__pycache__/' $LCM_PATH $ENV_PYTHON_PKG_PATH
 
 # Deactivate becayse we're done with the env now.
 deactivate
@@ -81,6 +71,8 @@ sudo cp -r app/ /data/www/mbot/api
 
 echo "Setting up service."
 sudo cp config/mbot-web-server.service /etc/systemd/system/
+# Fill in the path to this env.
+sudo sed -i "s#WEBAPP_ENV_PATH#$MBOT_APP_ENV#" /etc/systemd/system/mbot-web-server.service
 
 # Reload the service.
 sudo systemctl daemon-reload
