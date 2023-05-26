@@ -2,7 +2,7 @@
 
 Web app for the MBot Omni robot.
 
-## Installation
+## Dependencies
 
 The front end relies on NodeJS (to compile and run the JavaScript files), NPM (a
 package manager for NodeJS applications) and React, as well as some other
@@ -30,7 +30,7 @@ The webapp is accessible by typing the robot's IP into the browser.
 
 Once you have done the setup once, you only need to rerun the `install_app.sh` script in order to update the webapp code with a new version.
 
-## Local Executaion
+## Local Execution
 
 If you are developing this app and want to run it locally, follow these instructions.
 
