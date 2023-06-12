@@ -30,10 +30,10 @@ if [ ! -d $MBOT_APP_ENV ]; then
 fi
 
 # Before activating, get the Python path where the LCM packages are installed.
-ROOT_PYTHON_PKG_PATH=$(python -c "if True:
+ROOT_PYTHON_PKG_PATH=$(python3 -c "if True:
   import sysconfig as sc
   print(sc.get_path('platlib'))")
-LCM_PATH=$(python -c "if True:
+LCM_PATH=$(python3 -c "if True:
   import lcm
   print(lcm.__path__[0])")
 
@@ -41,7 +41,7 @@ LCM_PATH=$(python -c "if True:
 source $MBOT_APP_ENV/bin/activate
 
 # After activating, get the Python path where packages are installed in the env.
-ENV_PYTHON_PKG_PATH=$(python -c "if True:
+ENV_PYTHON_PKG_PATH=$(python3 -c "if True:
   import sysconfig as sc
   print(sc.get_path('platlib'))")
 
