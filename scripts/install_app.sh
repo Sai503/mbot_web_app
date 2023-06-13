@@ -30,9 +30,9 @@ if [ ! -d $MBOT_APP_ENV ]; then
 fi
 
 # Before activating, get the Python path where the LCM packages are installed.
-ROOT_PYTHON_PKG_PATH=$(python3 -c "if True:
-  import sysconfig as sc
-  print(sc.get_path('platlib'))")
+MSGS_PATH=$(python3 -c "if True:
+  import mbot_lcm_msgs
+  print(mbot_lcm_msgs.__path__[0])")
 LCM_PATH=$(python3 -c "if True:
   import lcm
   print(lcm.__path__[0])")
@@ -52,7 +52,7 @@ echo
 pip install --upgrade pip
 pip install -r requirements.txt
 # Copy messages and LCM into this environment. TODO: Fix this.
-rsync -av --exclude='*.pyc' --exclude='*/__pycache__/' $ROOT_PYTHON_PKG_PATH/mbot_lcm_msgs $ENV_PYTHON_PKG_PATH
+rsync -av --exclude='*.pyc' --exclude='*/__pycache__/' $MSGS_PATH $ENV_PYTHON_PKG_PATH
 rsync -av --exclude='*.pyc' --exclude='*/__pycache__/' $LCM_PATH $ENV_PYTHON_PKG_PATH
 
 # Deactivate becayse we're done with the env now.
