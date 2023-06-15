@@ -21,6 +21,29 @@ h1,h2,h3 {
   line-height:1.2
 }
 
+#joystick {
+  height: 200px;
+  width: 200px;
+  border-radius: 200px;
+  -moz-border-radius: 200px;
+  -webkit-border-radius: 200px;
+  text-align: center;
+  background-color: #61c3ed;
+  font: 24px/200px Helvetica, Arial, sans-serif;
+  cursor: all-scroll;
+  user-select: none;
+  z-index: -100;
+}
+
+.noselect {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
 h1 a {
   text-decoration: none;
   color: inherit;
@@ -135,6 +158,10 @@ canvas {
   margin-left: 5%;
   border-radius: 50px;
   display: none;
+}
+
+.hidden{
+  display: none
 }
 
 input[type="file"] {
@@ -548,6 +575,12 @@ input:checked + .slider.small:before {
 
 .keydown-drivecolor{
   background-color:rgb(28, 162, 186)
+}
+
+.temp{
+  width:200px;
+  height:200px;
+  margin:50px
 }
 
 /* Reminder: Add @-webkit-keyframes if animation doesn't appear on some devices */
