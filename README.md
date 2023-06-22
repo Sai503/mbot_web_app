@@ -18,17 +18,18 @@ Now you should have the `node` and `npm` command installed. You can check with `
 
 ## Setup on a Robot
 
-To set up the webapp on a new robot, use the helper scripts. First, install nginx:
+To set up the webapp on a new robot, use the helper scripts. First, install nginx and the Python dependencies:
 ```bash
 ./scripts/install_nginx.sh
+./scripts/install_python_deps.sh
 ```
-Then, setup the app.
+Then, build and install the app.
 ```bash
-./scripts/install_app.sh
+./scripts/deploy_app.sh
 ```
 The webapp is accessible by typing the robot's IP into the browser.
 
-Once you have done the setup once, you only need to rerun the `install_app.sh` script in order to update the webapp code with a new version.
+Once you have done the setup once, you only need to rerun the `deploy_app.sh` script in order to update the webapp code with a new version.
 
 ## Local Execution
 
