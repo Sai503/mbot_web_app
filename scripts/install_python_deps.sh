@@ -1,23 +1,6 @@
 #!/bin/bash
 set -e  # Quit on error.
 
-# Build the webapp.
-echo "#############################"
-echo "Building the webapp..."
-echo "#############################"
-npm install
-npm run build
-
-echo
-echo "Installing the web app..."
-echo
-# Move the build files into the public repo.
-sudo cp -r dist/* /data/www/mbot/
-
-echo "Restarting Nginx..."
-echo
-sudo systemctl restart nginx
-
 echo "#############################"
 echo "Setting up Python server..."
 echo "#############################"
@@ -57,27 +40,3 @@ rsync -av --exclude='*.pyc' --exclude='*/__pycache__/' $LCM_PATH $ENV_PYTHON_PKG
 
 # Deactivate becayse we're done with the env now.
 deactivate
-
-echo
-echo "Setting up server files."
-
-if [ ! -d "/data/www/mbot/api" ]; then
-    sudo mkdir /data/www/mbot/api
-fi
-
-# Copy over all the needed Python code.
-sudo cp mbot_omni_app.py /data/www/mbot/api
-sudo cp -r app/ /data/www/mbot/api
-
-echo "Setting up service."
-sudo cp config/mbot-web-server.service /etc/systemd/system/
-# Fill in the path to this env.
-sudo sed -i "s#WEBAPP_ENV_PATH#$MBOT_APP_ENV#" /etc/systemd/system/mbot-web-server.service
-
-# Reload the service.
-sudo systemctl daemon-reload
-sudo systemctl enable mbot-web-server.service
-sudo systemctl start mbot-web-server.service
-
-echo
-echo "Done! The webapp is now available at http://localhost"
