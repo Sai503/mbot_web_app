@@ -23,8 +23,3 @@ if [ -f "/etc/nginx/nginx.conf" ]; then
     sudo rm /etc/nginx/nginx.conf
 fi
 sudo cp config/nginx.conf /etc/nginx/nginx.conf
-
-echo "Done! The next step is to install the app with:"
-echo
-echo "    ./scripts/install_app.sh"
-echo
