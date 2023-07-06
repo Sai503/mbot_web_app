@@ -72,16 +72,37 @@ function ToggleSelect(props) {
   if (props.small) sizeCls = " small";
 
   return (
-    <div className="row my-4 text-left">
-      <div className="col-8">
-        <span>{props.label}</span>
+    // <div className=""></div>
+    <div className="my-4 text-left">
+      {/* <div className="row labels">
+        <div className="col-8">
+          <span>{props.label}</span>
+        </div>
+        <div className="col-4 text-right">
+          <label className={"switch" + sizeCls}>
+            <input type="checkbox" className="mx-2" checked={props.checked}
+                  onChange={() => props.onChange()}/>
+            <span className={"slider round" + sizeCls}></span>
+          </label>
+        </div>
+      </div> */}
+      {/* <div className="explain">
+        {props.explain}
+      </div> */}
+      <div className="row imgBox">
+        <div className="col-8">
+          <span>{props.label}</span>
+        </div>
+        <div className="col-4 text-right">
+          <label className={"switch" + sizeCls}>
+            <input type="checkbox" className="mx-2" checked={props.checked}
+                  onChange={() => props.onChange()}/>
+            <span className={"slider round" + sizeCls}></span>
+          </label>
+        </div>
       </div>
-      <div className="col-4 text-right">
-        <label className={"switch" + sizeCls}>
-          <input type="checkbox" className="mx-2" checked={props.checked}
-                 onChange={() => props.onChange()}/>
-          <span className={"slider round" + sizeCls}></span>
-        </label>
+      <div className="content">
+        {props.explain}
       </div>
     </div>
   );
@@ -668,13 +689,38 @@ class MBotApp extends React.Component {
             </div>
 
             <div className="row">
-              <div className="col">
-                <ToggleSelect label={"Localization Mode"} checked={this.state.slamMode !== config.slam_mode.IDLE}
+              <div className="container2">
+
+                <div className="box">
+                <ToggleSelect label={"Localization Mode"} explain={"This will localize the robot, initailizing the map and displaying it"} checked={this.state.slamMode !== config.slam_mode.IDLE}
                               onChange={ () => this.onLocalizationMode() }/>
+                </div>
+
+                {/* <div className="box">
+                    <div className="imgBox">
+                        <img src="https://image.freepik.com/free-photo/young-beautiful-woman-pink-warm-sweater-natural-look-smiling-portrait-isolated-long-hair_285396-896.jpg" alt="" />
+                    </div>
+                    <div className="content">
+                        <h2>Dolly Seth
+                        <span>Digital Marketing</span></h2>
+                    </div>
+                </div>
+                <div className="box">
+                    <div className="imgBox">
+                        <img src="https://image.freepik.com/free-photo/waist-up-portrait-handsome-serious-unshaven-male-keeps-hands-together-dressed-dark-blue-shirt-has-talk-with-interlocutor-stands-against-white-wall-self-confident-man-freelancer_273609-16320.jpg" alt="" />
+                    </div>
+                    <div className="content">
+                        <h2>Aakash Agrawal<br/>
+                        <span>Chartered Accountant C.A</span></h2>
+                    </div>
+                </div> */}
+              </div>
+
 
                   {/* TODO: Implement intial pose branch into code*/}
                   {/* {<button className="button start-color2" onClick={() => this.onSetPose()}>Set Inital Pose</button>} */}
-                  {this.state.slamMode !== config.slam_mode.IDLE &&
+                  
+                  {/* {this.state.slamMode !== config.slam_mode.IDLE &&
                     <div className="subpanel">
                       <ToggleSelect label={"Mapping Mode"} checked={this.state.slamMode === config.slam_mode.FULL_SLAM}
                                     onChange={ () => this.onMappingMode() } small={true} />
@@ -684,31 +730,30 @@ class MBotApp extends React.Component {
                         <button className="button" onClick={() => this.saveMap()}>Download Map</button>
                       </div>
                     </div>
-                  }
+                  } */}
 
                 {/* {<label htmlFor="file-upload" className="button upload-color mb-3">
                     Upload a Map
                   </label>
                   <input id="file-upload" type="file" onChange = {(event) => this.onFileChange(event)}/>} */}
                 { /* Checkboxes for map visualization. */}
-                <ToggleSelect label={"Draw Particles"} checked={this.state.particleDisplay}
+                {/* <ToggleSelect label={"Draw Particles"} checked={this.state.particleDisplay}
                               onChange={ () => this.changeParticles() }/>
                 <ToggleSelect label={"Draw Robot"} checked={this.state.robotDisplay}
-                              onChange={ () => this.changeRobot() }/>
-                {// Remove temporarily since backend doesn't publish this.
-                /* <ToggleSelect label={"Draw Costmap"} checked={this.state.costmapDisplay}
-                                 onChange={ () => this.changeCostMap() }/> */ }
-                <ToggleSelect label={"Draw Lasers"} checked={this.state.laserDisplay}
-                              onChange={ () => this.changeLasers() }/>
+                              onChange={ () => this.changeRobot() }/> */}
+                {/* // Remove temporarily since backend doesn't publish this. */}
+                {/* <ToggleSelect label={"Draw Costmap"} checked={this.state.costmapDisplay}
+                                 onChange={ () => this.changeCostMap() }/> */}
+                {/* <ToggleSelect label={"Draw Lasers"} checked={this.state.laserDisplay}
+                              onChange={ () => this.changeLasers() }/> */}
 
                 { /* Drive mode and control panel. */}
-                <ToggleSelect label={"Drive Mode"} checked={this.state.drivingMode}
+                {/* <ToggleSelect label={"Drive Mode"} checked={this.state.drivingMode}
                               onChange={ () => this.onDrivingMode() }/>
                 {this.state.drivingMode &&
                   <DriveControlPanel ws={this.ws} drivingMode={this.state.drivingMode} />
-                }
+                } */}
 
-              </div>
             </div>
           </div>
         </div>
