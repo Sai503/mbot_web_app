@@ -696,11 +696,8 @@ class MBotApp extends React.Component {
             <div className="row">
               <div className="container2">
 
-                <div className="box">
                 <ToggleSelect label={"Localization Mode"} explain={"This will localize the robot, initailizing the map and displaying it"} checked={this.state.slamMode !== config.slam_mode.IDLE}
                               onChange={ () => this.onLocalizationMode() }/>
-                </div>
-                <div className="box">
                   {this.state.slamMode !== config.slam_mode.IDLE &&
                     <div className="subpanel">
                       <ToggleSelect label={"Mapping Mode"} checked={this.state.slamMode === config.slam_mode.FULL_SLAM}
@@ -712,33 +709,10 @@ class MBotApp extends React.Component {
                       </div>
                     </div>
                   }
-                </div>
-
-                {/* <div className="box">
-                    <div className="imgBox">
-                        <img src="https://image.freepik.com/free-photo/young-beautiful-woman-pink-warm-sweater-natural-look-smiling-portrait-isolated-long-hair_285396-896.jpg" alt="" />
-                    </div>
-                    <div className="content">
-                        <h2>Dolly Seth
-                        <span>Digital Marketing</span></h2>
-                    </div>
-                </div>
-                <div className="box">
-                    <div className="imgBox">
-                        <img src="https://image.freepik.com/free-photo/waist-up-portrait-handsome-serious-unshaven-male-keeps-hands-together-dressed-dark-blue-shirt-has-talk-with-interlocutor-stands-against-white-wall-self-confident-man-freelancer_273609-16320.jpg" alt="" />
-                    </div>
-                    <div className="content">
-                        <h2>Aakash Agrawal<br/>
-                        <span>Chartered Accountant C.A</span></h2>
-                    </div>
-                </div> */}
-
 
                   {/* TODO: Implement intial pose branch into code*/}
                   {/* {<button className="button start-color2" onClick={() => this.onSetPose()}>Set Inital Pose</button>} */}
                   
-
-
                 {/* {<label htmlFor="file-upload" className="button upload-color mb-3">
                     Upload a Map
                   </label>
@@ -752,18 +726,19 @@ class MBotApp extends React.Component {
                 <ToggleSelect label={"Draw Robot"} checked={this.state.robotDisplay}
                                 onChange={ () => this.changeRobot() }/>
                 </div>
+                
                 {/* // Remove temporarily since backend doesn't publish this. */}
                 {/* <ToggleSelect label={"Draw Costmap"} checked={this.state.costmapDisplay}
                                  onChange={ () => this.changeCostMap() }/> */}
-                {/* <ToggleSelect label={"Draw Lasers"} checked={this.state.laserDisplay}
-                              onChange={ () => this.changeLasers() }/> */}
+                <ToggleSelect label={"Draw Lasers"} checked={this.state.laserDisplay}
+                              onChange={ () => this.changeLasers() }/>
 
                 { /* Drive mode and control panel. */}
-                {/* <ToggleSelect label={"Drive Mode"} checked={this.state.drivingMode}
+                <ToggleSelect label={"Drive Mode"} checked={this.state.drivingMode}
                               onChange={ () => this.onDrivingMode() }/>
                 {this.state.drivingMode &&
                   <DriveControlPanel ws={this.ws} drivingMode={this.state.drivingMode} />
-                } */}
+                }
             </div>
           </div>
         </div>
