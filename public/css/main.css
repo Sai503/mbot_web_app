@@ -194,19 +194,19 @@ input[type="file"] {
   transform: translate(-3.5rem, -3.5rem);
 } */
 
-.box:hover .content {
+/* .box:hover .content {
   transform: translate(5rem, 1rem);
   background-color: #cafaebef;
   color: rgba(60,79,133,255);
   visibility: visible;
-}
+} */
 
-/* .label:hover .imgBox{
-  transform: translate(5rem, 10rem);
+.label:hover .content{
+  transform: translate(5rem, 5rem);
   background-color: #cafaebef;
   color: rgba(60,79,133,255);
   visibility: visible;
-} */
+}
 
 .imgBox {
   position: relative;
@@ -225,11 +225,16 @@ input[type="file"] {
   resize: both;
 }
 
+.toggle{
+  z-index: 1;
+}
+
 .content {
   position: absolute;
   visibility: hidden;
   top: 0;
   left: 0;
+  width: 15em;
   /* width: 100%;
   height: 100%; */
   padding: 1.5rem;
@@ -237,7 +242,7 @@ input[type="file"] {
   justify-content: center;
   background-color: rgba(16, 27, 55, 0);
   color: rgba(16, 27, 55, 0);
-  z-index: 1;
+  z-index: 3;
   align-items: flex-end;
   text-align: center;
   transition: 0.5s ease-in-out;
@@ -267,20 +272,6 @@ input[type="file"] {
 .toggle-containers{
   position: relative;
   /* display: flex; */
-}
-
-.explain{
-  position:absolute;
-  top: 0;
-  left: 0;
-  padding: 1.5rem;
-  display: flex;
-  justify-content: center;
-  background-color: #fff;
-  z-index: 0;
-  align-items: flex-end;
-  text-align: center;
-  transition: 0.5s ease-in-out;
 }
 
 .button:hover {
@@ -414,6 +405,7 @@ button > a {
   width: 60px;
   height: 34px;
   margin-left: 10px;
+  z-index: inherit;
 }
 
 /* Hide default HTML checkbox */

@@ -94,9 +94,12 @@ function ToggleSelect(props) {
           <span>{props.label}</span>
         </div>
         <div className="col-1 label">
-        <FontAwesomeIcon icon={faCircleInfo} size="2xs" />                
+        <FontAwesomeIcon icon={faCircleInfo} size="2xs" />
+          <div className="content">
+            {props.explain}
+          </div>                
         </div>
-        <div className="col-4 text-right">
+        <div className="col-4 text-right toggle">
           <label className={"switch" + sizeCls}>
             <input type="checkbox" className="mx-2" checked={props.checked}
                   onChange={() => props.onChange()}/>
@@ -104,9 +107,8 @@ function ToggleSelect(props) {
           </label>
         </div>
       </div>
-      <div className="content">
-        {props.explain}
-      </div>
+
+
     </div>
   );
 }
