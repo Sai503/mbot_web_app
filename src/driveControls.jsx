@@ -131,18 +131,19 @@ class DriveControlPanel extends React.Component {
                   onMouseUp={() => this.stop()}>
             <FontAwesomeIcon icon={faArrowRotateLeft} />
           </button>
-          <button className="button drive-move" id="move-str"
+          <div className=""></div>
+          {/* <button className="button drive-move" id="move-str"
                   onMouseDown={() => this.drive(1, 0, 0, this.state.speed)}
                   onMouseUp={() => this.stop()}>
             <FontAwesomeIcon icon={faArrowUp} />
-          </button>
+          </button> */}
           <button className="button drive-turn" id="turn-right"
                   onMouseDown={() => this.drive(0, 0, -1, this.state.speed)}
                   onMouseUp={() => this.stop()}>
             <FontAwesomeIcon icon={faArrowRotateRight} />
           </button>
 
-          <button className="button drive-move" id="move-left"
+          {/* <button className="button drive-move" id="move-left"
                   onMouseDown={() => this.drive(0, 1, 0, this.state.speed)}
                   onMouseUp={() => this.stop()}>
             <FontAwesomeIcon icon={faArrowLeft} />
@@ -156,8 +157,9 @@ class DriveControlPanel extends React.Component {
                   onMouseDown={() => this.drive(-1, 0, 0, this.state.speed)} 
                   onMouseUp={() => this.stop()}>
             <FontAwesomeIcon icon={faArrowDown} />
-          </button>
+          </button> */}
         </div>
+        <div id="joy1Div" className={`temp`}> </div>
         <div className="button-wrapper-row top-spacing">
           <button className="button stop-color col-lg-12" id="drive-stop"
                   onClick={() => this.stop()}>Stop</button>
@@ -167,7 +169,6 @@ class DriveControlPanel extends React.Component {
           <input type="range" min="1" max="100" value={this.state.speed}
                  onChange={(evt) => this.onSpeedChange(evt)}></input>
         </div>
-        <div id="joy1Div" className={`temp`}> </div>
       </div>
     );
   }
