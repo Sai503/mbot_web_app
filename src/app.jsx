@@ -3,7 +3,7 @@ import React from "react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faBars } from '@fortawesome/free-solid-svg-icons'
+import { faBars, faCircleInfo } from '@fortawesome/free-solid-svg-icons'
 
 import config from "./config.js";
 import { normalizeAngle } from "./util";
@@ -90,8 +90,11 @@ function ToggleSelect(props) {
         {props.explain}
       </div> */}
       <div className="row imgBox">
-        <div className="col-8">
+        <div className="col-7">
           <span>{props.label}</span>
+        </div>
+        <div className="col-1 label">
+        <FontAwesomeIcon icon={faCircleInfo} size="2xs" />                
         </div>
         <div className="col-4 text-right">
           <label className={"switch" + sizeCls}>
@@ -695,6 +698,19 @@ class MBotApp extends React.Component {
                 <ToggleSelect label={"Localization Mode"} explain={"This will localize the robot, initailizing the map and displaying it"} checked={this.state.slamMode !== config.slam_mode.IDLE}
                               onChange={ () => this.onLocalizationMode() }/>
                 </div>
+                <div className="box">
+                  {this.state.slamMode !== config.slam_mode.IDLE &&
+                    <div className="subpanel">
+                      <ToggleSelect label={"Mapping Mode"} checked={this.state.slamMode === config.slam_mode.FULL_SLAM}
+                                    onChange={ () => this.onMappingMode() } small={true} />
+                      <div className="button-wrapper-col">
+                        <button className={"button" + (this.state.slamMode !== config.slam_mode.FULL_SLAM ? " inactive" : "")}
+                                onClick={() => this.onResetMap()}>Reset Map</button>
+                        <button className="button" onClick={() => this.saveMap()}>Download Map</button>
+                      </div>
+                    </div>
+                  }
+                </div>
 
                 {/* <div className="box">
                     <div className="imgBox">
@@ -714,33 +730,26 @@ class MBotApp extends React.Component {
                         <span>Chartered Accountant C.A</span></h2>
                     </div>
                 </div> */}
-              </div>
 
 
                   {/* TODO: Implement intial pose branch into code*/}
                   {/* {<button className="button start-color2" onClick={() => this.onSetPose()}>Set Inital Pose</button>} */}
                   
-                  {/* {this.state.slamMode !== config.slam_mode.IDLE &&
-                    <div className="subpanel">
-                      <ToggleSelect label={"Mapping Mode"} checked={this.state.slamMode === config.slam_mode.FULL_SLAM}
-                                    onChange={ () => this.onMappingMode() } small={true} />
-                      <div className="button-wrapper-col">
-                        <button className={"button" + (this.state.slamMode !== config.slam_mode.FULL_SLAM ? " inactive" : "")}
-                                onClick={() => this.onResetMap()}>Reset Map</button>
-                        <button className="button" onClick={() => this.saveMap()}>Download Map</button>
-                      </div>
-                    </div>
-                  } */}
+
 
                 {/* {<label htmlFor="file-upload" className="button upload-color mb-3">
                     Upload a Map
                   </label>
                   <input id="file-upload" type="file" onChange = {(event) => this.onFileChange(event)}/>} */}
                 { /* Checkboxes for map visualization. */}
-                {/* <ToggleSelect label={"Draw Particles"} checked={this.state.particleDisplay}
-                              onChange={ () => this.changeParticles() }/>
+                <div className="box">
+                  <ToggleSelect label={"Draw Particles"} checked={this.state.particleDisplay}
+                                onChange={ () => this.changeParticles() }/>
+                </div>
+                <div className="box">
                 <ToggleSelect label={"Draw Robot"} checked={this.state.robotDisplay}
-                              onChange={ () => this.changeRobot() }/> */}
+                                onChange={ () => this.changeRobot() }/>
+                </div>
                 {/* // Remove temporarily since backend doesn't publish this. */}
                 {/* <ToggleSelect label={"Draw Costmap"} checked={this.state.costmapDisplay}
                                  onChange={ () => this.changeCostMap() }/> */}
@@ -753,10 +762,10 @@ class MBotApp extends React.Component {
                 {this.state.drivingMode &&
                   <DriveControlPanel ws={this.ws} drivingMode={this.state.drivingMode} />
                 } */}
-
             </div>
           </div>
         </div>
+      </div>
     </div>
     );
   }
