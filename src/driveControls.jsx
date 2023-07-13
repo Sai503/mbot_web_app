@@ -34,7 +34,7 @@ class DriveControlPanel extends React.Component {
     this.x = 0;
     this.y = 0;
     this.t = 0;
-    this.isThisMounted = true
+    // this.isThisMounted = true
 
   }
 
@@ -46,19 +46,19 @@ class DriveControlPanel extends React.Component {
     // Mounts the joystick to the screen when the DriveControl Panel is loaded
 
     setTimeout(() => {      
-      let Joy1 = new JoyStick('joy1Div', {}, (stickData) => {
-        if(this.isThisMounted){
-          this.x = stickData.y/100
-          this.y = -stickData.x/100
-          this.drive()
-        }
+      new JoyStick('joy1Div', {}, (stickData) => {
+        // if(this.isThisMounted){
+          let xJoy = stickData.y/100
+          let yJoy = -stickData.x/100
+          this.drive(xJoy, yJoy)
+        // }
 
       });
      }, 100);
   }
 
   componentWillUnmount(){
-    this.isThisMounted = false
+    this.stop()
   }
 
   onSpeedChange(event) {
@@ -131,35 +131,15 @@ class DriveControlPanel extends React.Component {
                   onMouseUp={() => this.stop()}>
             <FontAwesomeIcon icon={faArrowRotateLeft} />
           </button>
-          <div className=""></div>
-          {/* <button className="button drive-move" id="move-str"
-                  onMouseDown={() => this.drive(1, 0, 0, this.state.speed)}
-                  onMouseUp={() => this.stop()}>
-            <FontAwesomeIcon icon={faArrowUp} />
-          </button> */}
+
           <button className="button drive-turn" id="turn-right"
                   onMouseDown={() => this.drive(0, 0, -1, this.state.speed)}
                   onMouseUp={() => this.stop()}>
             <FontAwesomeIcon icon={faArrowRotateRight} />
           </button>
 
-          {/* <button className="button drive-move" id="move-left"
-                  onMouseDown={() => this.drive(0, 1, 0, this.state.speed)}
-                  onMouseUp={() => this.stop()}>
-            <FontAwesomeIcon icon={faArrowLeft} />
-          </button>
-          <button className="button drive-move" id="move-right"
-                  onMouseDown={() => this.drive(0, -1, 0, this.state.speed)}
-                  onMouseUp={() => this.stop()}>
-            <FontAwesomeIcon icon={faArrowRight} />
-          </button>
-          <button className="button drive-move" id="move-back"
-                  onMouseDown={() => this.drive(-1, 0, 0, this.state.speed)} 
-                  onMouseUp={() => this.stop()}>
-            <FontAwesomeIcon icon={faArrowDown} />
-          </button> */}
         </div>
-        <div id="joy1Div" className={`temp`}> </div>
+        <div id="joy1Div" className={`joyStyle`}> </div>
         <div className="button-wrapper-row top-spacing">
           <button className="button stop-color col-lg-12" id="drive-stop"
                   onClick={() => this.stop()}>Stop</button>

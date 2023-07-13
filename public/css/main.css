@@ -214,7 +214,12 @@ input[type="file"] {
 }
 
 .label{
-  position: relative
+  position: relative;
+  margin: auto;
+}
+
+.icn{
+  padding: 50%;
 }
 
 /* .container2 .box:hover .imgBox {
@@ -228,8 +233,8 @@ input[type="file"] {
   visibility: visible;
 } */
 
-.label:hover .content{
-  transform: translate(5rem, 5rem);
+.icn:hover + .content{
+  transform: translate(7rem, 2rem);
   background-color: #cafaebef;
   color: rgba(60,79,133,255);
   visibility: visible;
@@ -291,10 +296,6 @@ input[type="file"] {
   letter-spacing: 2px;
 }
 
-.toggle-containers .hovering:hover .explain{
-  background-color: #113461;
-  transform: translate(0, -3.5rem);
-}
 
 .toggle-containers{
   position: relative;
@@ -685,7 +686,7 @@ input:checked + .slider.small:before {
   background-color:rgb(28, 162, 186)
 }
 
-.temp{
+.joyStyle{
   width:200px;
   height:200px;
   margin: 10px auto;
