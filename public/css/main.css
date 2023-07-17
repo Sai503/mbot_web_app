@@ -200,17 +200,10 @@ input[type="file"] {
 
 .container2 {
   position: relative;
-  /* display: flex; */
-  /* justify-content: center;
-  align-items: center; */
-  /* flex-wrap: wrap; */
 }
 
 .box {
   position: relative;
-  /* width: 10rem;
-  height: 10rem;
-  margin: 4rem; */
 }
 
 .label{
@@ -222,16 +215,6 @@ input[type="file"] {
   padding: 50%;
 }
 
-/* .container2 .box:hover .imgBox {
-  transform: translate(-3.5rem, -3.5rem);
-} */
-
-/* .box:hover .content {
-  transform: translate(5rem, 1rem);
-  background-color: #cafaebef;
-  color: rgba(60,79,133,255);
-  visibility: visible;
-} */
 
 .icn:hover + .content{
   transform: translate(7rem, 2rem);
