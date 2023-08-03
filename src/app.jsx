@@ -99,7 +99,7 @@ function ToggleSelect(props) {
           </div>
           <div className="content">
             {props.explain}
-          </div>                
+          </div>
         </div>
         <div className="col-4 text-right toggle">
           <label className={"switch" + sizeCls}>
@@ -698,12 +698,13 @@ class MBotApp extends React.Component {
             <div className="row">
               <div className="">
 
-                <ToggleSelect label={"Localization Mode"} explain={"This will localize the robot, initailizing the map and displaying it"} checked={this.state.slamMode !== config.slam_mode.IDLE}
+                <ToggleSelect label={"Localization Mode"} explain={"Toggles localization mode and displays map."}
+                              checked={this.state.slamMode !== config.slam_mode.IDLE}
                               onChange={ () => this.onLocalizationMode() }/>
                   {this.state.slamMode !== config.slam_mode.IDLE &&
                     <div className="subpanel">
                       <ToggleSelect label={"Mapping Mode"} checked={this.state.slamMode === config.slam_mode.FULL_SLAM}
-                                    explain={"This will start to map out an area around the robot. You can also upload a previous map, or download the map you see the robot has currently created"}
+                                    explain={"Toggles mapping mode on the robot."}
                                     onChange={ () => this.onMappingMode() } small={true} />
                       <div className="button-wrapper-col">
                         <button className={"button" + (this.state.slamMode !== config.slam_mode.FULL_SLAM ? " inactive" : "")}
@@ -715,7 +716,7 @@ class MBotApp extends React.Component {
 
                   {/* TODO: Implement intial pose branch into code*/}
                   {/* {<button className="button start-color2" onClick={() => this.onSetPose()}>Set Inital Pose</button>} */}
-                  
+
                 {/* {<label htmlFor="file-upload" className="button upload-color mb-3">
                     Upload a Map
                   </label>
@@ -723,25 +724,28 @@ class MBotApp extends React.Component {
                 { /* Checkboxes for map visualization. */}
                 <div className="box">
                   <ToggleSelect label={"Draw Particles"} checked={this.state.particleDisplay}
-                                explain={"This will show all the positions the robot thinks it might be at"}
+                                explain={"Shows all the positions the robot thinks it might be at."}
                                 onChange={ () => this.changeParticles() }/>
                 </div>
                 <div className="box">
                 <ToggleSelect label={"Draw Robot"} checked={this.state.robotDisplay}
-                                explain={"This will display the robot on the map"}
+                                explain={"Displays the robot on the map."}
                                 onChange={ () => this.changeRobot() }/>
-                </div>                     
+                </div>
 
                 {/* // Remove temporarily since backend doesn't publish this. */}
                 {/* <ToggleSelect label={"Draw Costmap"} checked={this.state.costmapDisplay}
                                  onChange={ () => this.changeCostMap() }/> */}
                 <ToggleSelect label={"Draw Lasers"} checked={this.state.laserDisplay}
-                              explain={"This will display what the lidar rays are capturing currently"}
+                              explain={"Displays the Lidar rays."}
                               onChange={ () => this.changeLasers() }/>
 
                 { /* Drive mode and control panel. */}
                 <ToggleSelect label={"Drive Mode"} checked={this.state.drivingMode}
-                              explain={"To drive the robot with your keyboard, use A,D for left & right, W,S for forward & backward, and Q,E to rotate. Additionally, you can click and drag the joystick and press the turn buttons to move the robot"}
+                              explain={"To drive the robot with your keyboard, use A,D for left & right, " +
+                                       "W,S for forward & backward, and Q,E to rotate. " +
+                                       "Alternatively, you can click and drag the joystick and " +
+                                       "press the turn buttons to move the robot"}
                               onChange={ () => this.onDrivingMode() }/>
                 {this.state.drivingMode &&
                   <DriveControlPanel ws={this.ws} drivingMode={this.state.drivingMode} />
