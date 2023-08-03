@@ -16,3 +16,6 @@ __pycache__/
 # Other
 .DS_Store
 lcmtypes/*.py
+
+# Release tars.
+*.tar.gz
