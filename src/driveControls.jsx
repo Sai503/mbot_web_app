@@ -34,12 +34,30 @@ class DriveControlPanel extends React.Component {
     this.x = 0;
     this.y = 0;
     this.t = 0;
+
   }
 
   componentDidMount() {
     // TODO: The event listener should be in the main app in case anyone else uses keys.
     document.addEventListener('keydown', (evt) => { this.handleKeyDown(evt); }, false);
     document.addEventListener('keyup', (evt) => { this.handleKeyUp(evt); }, false);
+
+    // Mounts the joystick to the screen when the DriveControl Panel is loaded
+
+    setTimeout(() => {
+      let style = {internalFillColor: "#D86018",
+                   internalStrokeColor: "#954211",
+                   externalStrokeColor: "#954211"};
+      new JoyStick('joy1Div', style, (stickData) => {
+          let xJoy = stickData.y * this.state.speed / 10000;
+          let yJoy = -stickData.x * this.state.speed / 10000;
+          this.drive(xJoy, yJoy);
+      });
+     }, 100);
+  }
+
+  componentWillUnmount(){
+    this.stop()
   }
 
   onSpeedChange(event) {
@@ -61,7 +79,10 @@ class DriveControlPanel extends React.Component {
       }
 
       // Update drive speeds.
-      this.drive(this.x, this.y, this.t, this.state.speed);
+      let vx = this.x * this.state.speed / 100.;
+      let vy = this.y * this.state.speed / 100.;
+      let wz = config.ANG_VEL_MULTIPLIER * this.state.speed * this.t / 100.;
+      this.drive(vx, vy, wz);
     }
   }
 
@@ -86,7 +107,10 @@ class DriveControlPanel extends React.Component {
       if (reset) { this.x = 0; this.y = 0; this.t = 0; }
 
       // Update drive speeds.
-      this.drive(this.x, this.y, this.t, this.state.speed);
+      let vx = this.x * this.state.speed / 100.;
+      let vy = this.y * this.state.speed / 100.;
+      let wz = config.ANG_VEL_MULTIPLIER * this.state.speed * this.t / 100.;
+      this.drive(vx, vy, wz);
     }
   }
 
@@ -95,10 +119,8 @@ class DriveControlPanel extends React.Component {
     this.props.ws.socket.emit("stop", {'stop cmd': "stop"});
   }
 
-  drive(x, y, t, spd){
-    this.props.ws.socket.emit("move", {'vx' : spd * x / 100.,
-                                       'vy' : spd * y / 100.,
-                                       'wz' : config.ANG_VEL_MULTIPLIER * spd * t / 100.})
+  drive(vx, vy, wz = 0){
+    this.props.ws.socket.emit("move", {'vx' : vx, 'vy' : vy, 'wz' : wz})
   }
 
   render() {
@@ -106,31 +128,19 @@ class DriveControlPanel extends React.Component {
       <div className="drive-panel-wrapper">
         <div className="drive-buttons">
           <button className="button drive-turn" id="turn-left"
-                  onClick={() => this.drive(0, 0, 1, this.state.speed)}>
+                  onMouseDown={() => this.drive(0, 0, config.ANG_VEL_MULTIPLIER * this.state.speed / 100.)}
+                  onMouseUp={() => this.stop()}>
             <FontAwesomeIcon icon={faArrowRotateLeft} />
           </button>
-          <button className="button drive-move" id="move-str"
-                  onClick={() => this.drive(1, 0, 0, this.state.speed)}>
-            <FontAwesomeIcon icon={faArrowUp} />
-          </button>
+
           <button className="button drive-turn" id="turn-right"
-                  onClick={() => this.drive(0, 0, -1, this.state.speed)}>
+                  onMouseDown={() => this.drive(0, 0, -config.ANG_VEL_MULTIPLIER * this.state.speed / 100.)}
+                  onMouseUp={() => this.stop()}>
             <FontAwesomeIcon icon={faArrowRotateRight} />
           </button>
 
-          <button className="button drive-move" id="move-left"
-                  onClick={() => this.drive(0, 1, 0, this.state.speed)}>
-            <FontAwesomeIcon icon={faArrowLeft} />
-          </button>
-          <button className="button drive-move" id="move-right"
-                  onClick={() => this.drive(0, -1, 0, this.state.speed)}>
-            <FontAwesomeIcon icon={faArrowRight} />
-          </button>
-          <button className="button drive-move" id="move-back"
-                  onClick={() => this.drive(-1, 0, 0, this.state.speed)}>
-            <FontAwesomeIcon icon={faArrowDown} />
-          </button>
         </div>
+        <div id="joy1Div" className={`joyStyle`}> </div>
         <div className="button-wrapper-row top-spacing">
           <button className="button stop-color col-lg-12" id="drive-stop"
                   onClick={() => this.stop()}>Stop</button>

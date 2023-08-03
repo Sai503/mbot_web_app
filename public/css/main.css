@@ -21,6 +21,29 @@ h1,h2,h3 {
   line-height:1.2
 }
 
+#joystick {
+  height: 200px;
+  width: 200px;
+  border-radius: 200px;
+  -moz-border-radius: 200px;
+  -webkit-border-radius: 200px;
+  text-align: center;
+  background-color: #61c3ed;
+  font: 24px/200px Helvetica, Arial, sans-serif;
+  cursor: all-scroll;
+  user-select: none;
+  z-index: -100;
+}
+
+.noselect {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
 h1 a {
   text-decoration: none;
   color: inherit;
@@ -42,7 +65,7 @@ a:hover {
 #sidenav {
   grid-area: nav;
   width: 400px;
-  background-color: rgb(18, 18, 18, 0.924);
+  background-color: rgba(3, 12, 38, 0.924);
   color: #fff;
 }
 
@@ -137,6 +160,10 @@ canvas {
   display: none;
 }
 
+.hidden{
+  display: none
+}
+
 input[type="file"] {
   display: none;
 }
@@ -153,6 +180,7 @@ input[type="file"] {
   background-color: #0b4b86;
 }
 
+
 .button {
   background-color: #2F65A7;
   border: none;
@@ -164,6 +192,93 @@ input[type="file"] {
   display: inline-block;
   font-size: 16px;
   transition: background-color 0.5s;
+}
+
+.labels{
+  z-index: 1
+}
+
+.container2 {
+  position: relative;
+}
+
+.box {
+  position: relative;
+}
+
+.label{
+  position: relative;
+  margin: auto;
+}
+
+.icn{
+  display: inline-block;
+}
+
+
+.icn:hover + .content{
+  transform: translate(7rem, 2rem);
+  background-color: #cafaebef;
+  color: rgba(60,79,133,255);
+  display: block;
+}
+
+.imgBox {
+  position: relative;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  transition: all 0.5s ease-in-out;
+}
+
+.imgBox img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  resize: both;
+}
+
+.toggle{
+  z-index: 1;
+}
+
+.content {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 18rem;
+  padding: 1.5rem;
+  background-color: rgba(16, 27, 55, 0);
+  color: rgba(16, 27, 55, 0);
+  font-size: 0.75em;
+  z-index: 3;
+  text-align: left;
+  /* transition: 0.4s ease-in-out; */
+}
+
+.content h2 {
+  display: block;
+  font-size: 2rem;
+  color: #111;
+  font-weight: 500;
+  line-height: 2rem;
+  letter-spacing: 1px;
+}
+
+.content span {
+  color: #555;
+  font-size: 1.4rem;
+  font-weight: 300;
+  letter-spacing: 2px;
+}
+
+
+.toggle-containers{
+  position: relative;
+  /* display: flex; */
 }
 
 .button:hover {
@@ -297,6 +412,7 @@ button > a {
   width: 60px;
   height: 34px;
   margin-left: 10px;
+  z-index: inherit;
 }
 
 /* Hide default HTML checkbox */
@@ -456,7 +572,8 @@ input:checked + .slider.small:before {
 }
 
 .drive-panel-wrapper {
-  padding-top: 1em;
+
+  /* padding-top: 1em; */
 }
 
 .drive-buttons {
@@ -466,10 +583,8 @@ input:checked + .slider.small:before {
   justify-items: center;
   align-items: center;
   grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  grid-template-areas: "turn-left forward turn-right"
-                       "left . right"
-                       ". back .";
+  grid-template-rows: repeat(1, 1fr);
+  grid-template-areas: "turn-left forward turn-right";
 }
 
 /* Drive forward robot */
@@ -548,6 +663,14 @@ input:checked + .slider.small:before {
 
 .keydown-drivecolor{
   background-color:rgb(28, 162, 186)
+}
+
+.joyStyle{
+  width:200px;
+  height:200px;
+  margin: 10px auto;
+  justify-items: center;
+  align-items: center;
 }
 
 /* Reminder: Add @-webkit-keyframes if animation doesn't appear on some devices */

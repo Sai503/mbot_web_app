@@ -3,7 +3,7 @@ import React from "react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faBars } from '@fortawesome/free-solid-svg-icons'
+import { faBars, faCircleInfo } from '@fortawesome/free-solid-svg-icons'
 
 import config from "./config.js";
 import { normalizeAngle } from "./util";
@@ -72,16 +72,26 @@ function ToggleSelect(props) {
   if (props.small) sizeCls = " small";
 
   return (
-    <div className="row my-4 text-left">
-      <div className="col-8">
-        <span>{props.label}</span>
-      </div>
-      <div className="col-4 text-right">
-        <label className={"switch" + sizeCls}>
-          <input type="checkbox" className="mx-2" checked={props.checked}
-                 onChange={() => props.onChange()}/>
-          <span className={"slider round" + sizeCls}></span>
-        </label>
+    <div className="my-4 text-left">
+      <div className="row imgBox">
+        <div className="col-7">
+          <span>{props.label}</span>
+        </div>
+        <div className="col-1 label">
+          <div className="icn">
+            <FontAwesomeIcon icon={faCircleInfo} size="xs" />
+          </div>
+          <div className="content">
+            {props.explain}
+          </div>
+        </div>
+        <div className="col-4 text-right toggle">
+          <label className={"switch" + sizeCls}>
+            <input type="checkbox" className="mx-2" checked={props.checked}
+                  onChange={() => props.onChange()}/>
+            <span className={"slider round" + sizeCls}></span>
+          </label>
+        </div>
       </div>
     </div>
   );
@@ -668,15 +678,15 @@ class MBotApp extends React.Component {
             </div>
 
             <div className="row">
-              <div className="col">
-                <ToggleSelect label={"Localization Mode"} checked={this.state.slamMode !== config.slam_mode.IDLE}
-                              onChange={ () => this.onLocalizationMode() }/>
+              <div className="">
 
-                  {/* TODO: Implement intial pose branch into code*/}
-                  {/* {<button className="button start-color2" onClick={() => this.onSetPose()}>Set Inital Pose</button>} */}
+                <ToggleSelect label={"Localization Mode"} explain={"Toggles localization mode and displays map."}
+                              checked={this.state.slamMode !== config.slam_mode.IDLE}
+                              onChange={ () => this.onLocalizationMode() }/>
                   {this.state.slamMode !== config.slam_mode.IDLE &&
                     <div className="subpanel">
                       <ToggleSelect label={"Mapping Mode"} checked={this.state.slamMode === config.slam_mode.FULL_SLAM}
+                                    explain={"Toggles mapping mode on the robot."}
                                     onChange={ () => this.onMappingMode() } small={true} />
                       <div className="button-wrapper-col">
                         <button className={"button" + (this.state.slamMode !== config.slam_mode.FULL_SLAM ? " inactive" : "")}
@@ -686,32 +696,46 @@ class MBotApp extends React.Component {
                     </div>
                   }
 
+                  {/* TODO: Implement intial pose branch into code*/}
+                  {/* {<button className="button start-color2" onClick={() => this.onSetPose()}>Set Inital Pose</button>} */}
+
                 {/* {<label htmlFor="file-upload" className="button upload-color mb-3">
                     Upload a Map
                   </label>
                   <input id="file-upload" type="file" onChange = {(event) => this.onFileChange(event)}/>} */}
                 { /* Checkboxes for map visualization. */}
-                <ToggleSelect label={"Draw Particles"} checked={this.state.particleDisplay}
-                              onChange={ () => this.changeParticles() }/>
+                <div className="box">
+                  <ToggleSelect label={"Draw Particles"} checked={this.state.particleDisplay}
+                                explain={"Shows all the positions the robot thinks it might be at."}
+                                onChange={ () => this.changeParticles() }/>
+                </div>
+                <div className="box">
                 <ToggleSelect label={"Draw Robot"} checked={this.state.robotDisplay}
-                              onChange={ () => this.changeRobot() }/>
-                {// Remove temporarily since backend doesn't publish this.
-                /* <ToggleSelect label={"Draw Costmap"} checked={this.state.costmapDisplay}
-                                 onChange={ () => this.changeCostMap() }/> */ }
+                                explain={"Displays the robot on the map."}
+                                onChange={ () => this.changeRobot() }/>
+                </div>
+
+                {/* // Remove temporarily since backend doesn't publish this. */}
+                {/* <ToggleSelect label={"Draw Costmap"} checked={this.state.costmapDisplay}
+                                 onChange={ () => this.changeCostMap() }/> */}
                 <ToggleSelect label={"Draw Lasers"} checked={this.state.laserDisplay}
+                              explain={"Displays the Lidar rays."}
                               onChange={ () => this.changeLasers() }/>
 
                 { /* Drive mode and control panel. */}
                 <ToggleSelect label={"Drive Mode"} checked={this.state.drivingMode}
+                              explain={"To drive the robot with your keyboard, use A,D for left & right, " +
+                                       "W,S for forward & backward, and Q,E to rotate. " +
+                                       "Alternatively, you can click and drag the joystick and " +
+                                       "press the turn buttons to move the robot"}
                               onChange={ () => this.onDrivingMode() }/>
                 {this.state.drivingMode &&
                   <DriveControlPanel ws={this.ws} drivingMode={this.state.drivingMode} />
                 }
-
-              </div>
             </div>
           </div>
         </div>
+      </div>
     </div>
     );
   }
