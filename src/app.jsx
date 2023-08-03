@@ -72,30 +72,14 @@ function ToggleSelect(props) {
   if (props.small) sizeCls = " small";
 
   return (
-    // <div className=""></div>
     <div className="my-4 text-left">
-      {/* <div className="row labels">
-        <div className="col-8">
-          <span>{props.label}</span>
-        </div>
-        <div className="col-4 text-right">
-          <label className={"switch" + sizeCls}>
-            <input type="checkbox" className="mx-2" checked={props.checked}
-                  onChange={() => props.onChange()}/>
-            <span className={"slider round" + sizeCls}></span>
-          </label>
-        </div>
-      </div> */}
-      {/* <div className="explain">
-        {props.explain}
-      </div> */}
       <div className="row imgBox">
         <div className="col-7">
           <span>{props.label}</span>
         </div>
         <div className="col-1 label">
           <div className="icn">
-            <FontAwesomeIcon icon={faCircleInfo} size="2xs" />
+            <FontAwesomeIcon icon={faCircleInfo} size="xs" />
           </div>
           <div className="content">
             {props.explain}
@@ -109,8 +93,6 @@ function ToggleSelect(props) {
           </label>
         </div>
       </div>
-
-
     </div>
   );
 }
