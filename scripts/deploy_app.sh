@@ -1,12 +1,16 @@
 #!/bin/bash
 set -e  # Quit on error.
 
-# Build the webapp.
-echo "#############################"
-echo "Building the webapp..."
-echo "#############################"
-npm install
-npm run build
+if [[ "$@" == *"--no-rebuild"* ]]; then
+  echo "Webapp will be installed from the dist/ folder without rebuild."
+else
+  # Build the webapp.
+  echo "#############################"
+  echo "Building the webapp..."
+  echo "#############################"
+  npm install
+  npm run build
+fi
 
 echo
 echo "Installing the web app..."
