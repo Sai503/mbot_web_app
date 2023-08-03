@@ -34,7 +34,6 @@ class DriveControlPanel extends React.Component {
     this.x = 0;
     this.y = 0;
     this.t = 0;
-    // this.isThisMounted = true
 
   }
 
@@ -45,14 +44,14 @@ class DriveControlPanel extends React.Component {
 
     // Mounts the joystick to the screen when the DriveControl Panel is loaded
 
-    setTimeout(() => {      
-      new JoyStick('joy1Div', {}, (stickData) => {
-        // if(this.isThisMounted){
-          let xJoy = stickData.y/100
-          let yJoy = -stickData.x/100
-          this.drive(xJoy, yJoy)
-        // }
-
+    setTimeout(() => {
+      let style = {internalFillColor: "#D86018",
+                   internalStrokeColor: "#954211",
+                   externalStrokeColor: "#954211"};
+      new JoyStick('joy1Div', style, (stickData) => {
+          let xJoy = stickData.y * this.state.speed / 10000;
+          let yJoy = -stickData.x * this.state.speed / 10000;
+          this.drive(xJoy, yJoy);
       });
      }, 100);
   }
@@ -80,7 +79,10 @@ class DriveControlPanel extends React.Component {
       }
 
       // Update drive speeds.
-      this.drive(this.x, this.y, this.t, this.state.speed);
+      let vx = this.x * this.state.speed / 100.;
+      let vy = this.y * this.state.speed / 100.;
+      let wz = config.ANG_VEL_MULTIPLIER * this.state.speed * this.t / 100.;
+      this.drive(vx, vy, wz);
     }
   }
 
@@ -105,7 +107,10 @@ class DriveControlPanel extends React.Component {
       if (reset) { this.x = 0; this.y = 0; this.t = 0; }
 
       // Update drive speeds.
-      this.drive(this.x, this.y, this.t, this.state.speed);
+      let vx = this.x * this.state.speed / 100.;
+      let vy = this.y * this.state.speed / 100.;
+      let wz = config.ANG_VEL_MULTIPLIER * this.state.speed * this.t / 100.;
+      this.drive(vx, vy, wz);
     }
   }
 
@@ -114,12 +119,8 @@ class DriveControlPanel extends React.Component {
     this.props.ws.socket.emit("stop", {'stop cmd': "stop"});
   }
 
-  drive(x=this.x, y=this.y, t=this.t, spd=this.state.speed){
-    this.props.ws.socket.emit("move", {
-                              'vx' : spd * x / 100.,
-                              'vy' : spd * y / 100.,
-                              'wz' : config.ANG_VEL_MULTIPLIER * spd * t / 100.
-    })
+  drive(vx, vy, wz = 0){
+    this.props.ws.socket.emit("move", {'vx' : vx, 'vy' : vy, 'wz' : wz})
   }
 
   render() {
@@ -127,13 +128,13 @@ class DriveControlPanel extends React.Component {
       <div className="drive-panel-wrapper">
         <div className="drive-buttons">
           <button className="button drive-turn" id="turn-left"
-                  onMouseDown={() => this.drive(0, 0, 1, this.state.speed)}
+                  onMouseDown={() => this.drive(0, 0, config.ANG_VEL_MULTIPLIER * this.state.speed / 100.)}
                   onMouseUp={() => this.stop()}>
             <FontAwesomeIcon icon={faArrowRotateLeft} />
           </button>
 
           <button className="button drive-turn" id="turn-right"
-                  onMouseDown={() => this.drive(0, 0, -1, this.state.speed)}
+                  onMouseDown={() => this.drive(0, 0, -config.ANG_VEL_MULTIPLIER * this.state.speed / 100.)}
                   onMouseUp={() => this.stop()}>
             <FontAwesomeIcon icon={faArrowRotateRight} />
           </button>
