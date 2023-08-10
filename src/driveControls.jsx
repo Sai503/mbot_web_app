@@ -1,10 +1,6 @@
 import React from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  faArrowUp,
-  faArrowDown,
-  faArrowLeft,
-  faArrowRight,
   faArrowRotateLeft,
   faArrowRotateRight
 } from '@fortawesome/free-solid-svg-icons'
