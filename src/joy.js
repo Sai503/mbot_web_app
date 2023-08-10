@@ -70,7 +70,7 @@
   *  autoReturnToCenter {Bool} (optional) - Sets the behavior of the stick, whether or not, it should return to zero position when released (Default value is True and return to zero)
   * @param callback {StickStatus} - 
   */
- var JoyStick = (function(container, parameters, callback)
+var JoyStick = (function(container, parameters, callback)
  {
      parameters = parameters || {};
      var title = (typeof parameters.title === "undefined" ? "joystick" : parameters.title),
@@ -356,62 +356,64 @@
       * @desc The width of canvas
       * @return Number of pixel width 
       */
-     this.GetWidth = function () 
-     {
-         return canvas.width;
-     };
+    //  this.GetWidth = function () 
+    //  {
+    //      return canvas.width;
+    //  };
  
-     /**
-      * @desc The height of canvas
-      * @return Number of pixel height
-      */
-     this.GetHeight = function () 
-     {
-         return canvas.height;
-     };
+    //  /**
+    //   * @desc The height of canvas
+    //   * @return Number of pixel height
+    //   */
+    //  this.GetHeight = function () 
+    //  {
+    //      return canvas.height;
+    //  };
  
-     /**
-      * @desc The X position of the cursor relative to the canvas that contains it and to its dimensions
-      * @return Number that indicate relative position
-      */
-     this.GetPosX = function ()
-     {
-         return movedX;
-     };
+    //  /**
+    //   * @desc The X position of the cursor relative to the canvas that contains it and to its dimensions
+    //   * @return Number that indicate relative position
+    //   */
+    //  this.GetPosX = function ()
+    //  {
+    //      return movedX;
+    //  };
  
-     /**
-      * @desc The Y position of the cursor relative to the canvas that contains it and to its dimensions
-      * @return Number that indicate relative position
-      */
-     this.GetPosY = function ()
-     {
-         return movedY;
-     };
+    //  /**
+    //   * @desc The Y position of the cursor relative to the canvas that contains it and to its dimensions
+    //   * @return Number that indicate relative position
+    //   */
+    //  this.GetPosY = function ()
+    //  {
+    //      return movedY;
+    //  };
  
-     /**
-      * @desc Normalizzed value of X move of stick
-      * @return Integer from -100 to +100
-      */
-     this.GetX = function ()
-     {
-         return (100*((movedX - centerX)/maxMoveStick)).toFixed();
-     };
+    //  /**
+    //   * @desc Normalizzed value of X move of stick
+    //   * @return Integer from -100 to +100
+    //   */
+    //  this.GetX = function ()
+    //  {
+    //      return (100*((movedX - centerX)/maxMoveStick)).toFixed();
+    //  };
  
-     /**
-      * @desc Normalizzed value of Y move of stick
-      * @return Integer from -100 to +100
-      */
-     this.GetY = function ()
-     {
-         return ((100*((movedY - centerY)/maxMoveStick))*-1).toFixed();
-     };
+    //  /**
+    //   * @desc Normalizzed value of Y move of stick
+    //   * @return Integer from -100 to +100
+    //   */
+    //  this.GetY = function ()
+    //  {
+    //      return ((100*((movedY - centerY)/maxMoveStick))*-1).toFixed();
+    //  };
  
-     /**
-      * @desc Get the direction of the cursor as a string that indicates the cardinal points where this is oriented
-      * @return String of cardinal point N, NE, E, SE, S, SW, W, NW and C when it is placed in the center
-      */
-     this.GetDir = function()
-     {
-         return getCardinalDirection();
-     };
+    //  /**
+    //   * @desc Get the direction of the cursor as a string that indicates the cardinal points where this is oriented
+    //   * @return String of cardinal point N, NE, E, SE, S, SW, W, NW and C when it is placed in the center
+    //   */
+    //  this.GetDir = function()
+    //  {
+    //      return getCardinalDirection();
+    //  };
  });
+
+ export default JoyStick;

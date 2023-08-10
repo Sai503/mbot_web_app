@@ -10,6 +10,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 
 import config from "./config.js";
+import JoyStick from "./joy.js";
 
 /********************
  * MOVE PANEL
@@ -46,11 +47,11 @@ class DriveControlPanel extends React.Component {
     // Mounts the joystick to the screen when the DriveControl Panel is loaded
 
     setTimeout(() => {      
-      new JoyStick('joy1Div', {}, (stickData) => {
+      JoyStick('joy1Div', {}, (stickData) => {
         // if(this.isThisMounted){
           let xJoy = stickData.y/100
           let yJoy = -stickData.x/100
-          this.drive(xJoy, yJoy)
+          console.log(xJoy, yJoy)
         // }
 
       });
