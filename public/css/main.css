@@ -211,53 +211,39 @@ input[type="file"] {
   margin: auto;
 }
 
-.icn{
-  display: inline-block;
-}
+.icn{	
+  padding: 50%;	
+  cursor: pointer;
+}	
 
+.icn:hover + .content{	
+  left: 100%;
+  transform: translateX(9rem);	
+  background-color: #cafaebef;	
+  color: rgba(60,79,133,255);	
+  visibility: visible;	
+}	
 
-.icn:hover + .content{
-  transform: translate(7rem, 2rem);
-  background-color: #cafaebef;
-  color: rgba(60,79,133,255);
-  display: block;
-}
-
-.imgBox {
-  position: relative;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  transition: all 0.5s ease-in-out;
-}
-
-.imgBox img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  resize: both;
-}
-
-.toggle{
-  z-index: 1;
-}
-
-.content {
-  display: none;
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 18rem;
-  padding: 1.5rem;
-  background-color: rgba(16, 27, 55, 0);
-  color: rgba(16, 27, 55, 0);
-  font-size: 0.75em;
-  z-index: 3;
-  text-align: left;
-  /* transition: 0.4s ease-in-out; */
-}
+.toggle{	
+  z-index: 1;	
+}	
+.content {	
+  position: absolute;	
+  visibility: hidden;	
+  top: 0;	
+  left: 100%;	
+  width: 15em;	
+  padding: 1.5rem;	
+  display: flex;	
+  justify-content: center;	
+  background-color: rgba(16, 27, 55, 0);	
+  color: rgba(16, 27, 55, 0);	
+  z-index: 3;	
+  align-items: flex-end;	
+  text-align: center;	
+  transform: translateX(12em);
+  transition: 0.5s ease-in-out;	
+}	
 
 .content h2 {
   display: block;

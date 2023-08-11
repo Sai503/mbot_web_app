@@ -142,11 +142,6 @@ class DriveControlPanel extends React.Component {
           <button className="button stop-color col-lg-12" id="drive-stop"
                   onClick={() => this.stop()}>Stop</button>
         </div>
-        <div className="col-lg-12">
-          <span>Speed: {this.state.speed} &nbsp;&nbsp;</span>
-          <input type="range" min="1" max="100" value={this.state.speed}
-                 onChange={(evt) => this.onSpeedChange(evt)}></input>
-        </div>
       </div>
     );
   }
