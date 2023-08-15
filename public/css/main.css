@@ -230,10 +230,11 @@ input[type="file"] {
 .content {	
   position: absolute;	
   visibility: hidden;	
+  font-size: 85%;
   top: 0;	
   left: 100%;	
   width: 15em;	
-  padding: 1.5rem;	
+  padding: 1.35rem;	
   display: flex;	
   justify-content: center;	
   background-color: rgba(16, 27, 55, 0);	
