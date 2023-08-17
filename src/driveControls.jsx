@@ -117,6 +117,7 @@ class DriveControlPanel extends React.Component {
   }
 
   drive(vx, vy, wz = 0){
+    console.log(vx, vy, wz)
     this.props.ws.socket.emit("move", {'vx' : vx, 'vy' : vy, 'wz' : wz})
   }
 
@@ -141,6 +142,11 @@ class DriveControlPanel extends React.Component {
         <div className="button-wrapper-row top-spacing">
           <button className="button stop-color col-lg-12" id="drive-stop"
                   onClick={() => this.stop()}>Stop</button>
+        </div>
+        <div className="col-lg-12">
+          <span>Speed: {this.state.speed} &nbsp;&nbsp;</span>
+          <input type="range" min="1" max="100" value={this.state.speed}
+                 onChange={(evt) => this.onSpeedChange(evt)}></input>
         </div>
       </div>
     );
