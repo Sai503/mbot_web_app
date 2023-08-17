@@ -212,51 +212,38 @@ input[type="file"] {
 }
 
 .icn{
-  display: inline-block;
+  padding: 50%;
+  cursor: pointer;
 }
-
 
 .icn:hover + .content{
-  transform: translate(7rem, 2rem);
+  left: 100%;
+  transform: translateX(9rem);
   background-color: #cafaebef;
   color: rgba(60,79,133,255);
-  display: block;
-}
-
-.imgBox {
-  position: relative;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  transition: all 0.5s ease-in-out;
-}
-
-.imgBox img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  resize: both;
+  visibility: visible;
 }
 
 .toggle{
   z-index: 1;
 }
-
 .content {
-  display: none;
   position: absolute;
+  visibility: hidden;
+  font-size: 85%;
   top: 0;
-  left: 0;
-  width: 18rem;
-  padding: 1.5rem;
+  left: 100%;
+  width: 15em;
+  padding: 1.35rem;
+  display: flex;
+  justify-content: center;
   background-color: rgba(16, 27, 55, 0);
   color: rgba(16, 27, 55, 0);
-  font-size: 0.75em;
   z-index: 3;
-  text-align: left;
-  /* transition: 0.4s ease-in-out; */
+  align-items: flex-end;
+  text-align: center;
+  transform: translateX(12em);
+  transition: 0.5s ease-in-out;
 }
 
 .content h2 {
@@ -577,14 +564,13 @@ input:checked + .slider.small:before {
 }
 
 .drive-buttons {
-  margin: 0 auto;
-  width: fit-content;
+  width: 100%;
   display: grid;
   justify-items: center;
   align-items: center;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   grid-template-rows: repeat(1, 1fr);
-  grid-template-areas: "turn-left forward turn-right";
+  grid-template-areas: "turn-left turn-right";
 }
 
 /* Drive forward robot */
@@ -668,7 +654,7 @@ input:checked + .slider.small:before {
 .joyStyle{
   width:200px;
   height:200px;
-  margin: 10px auto;
+  margin: 0 auto 10px auto;
   justify-items: center;
   align-items: center;
 }
