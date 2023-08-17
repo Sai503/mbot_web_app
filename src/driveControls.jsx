@@ -117,7 +117,6 @@ class DriveControlPanel extends React.Component {
   }
 
   drive(vx, vy, wz = 0){
-    console.log(vx, vy, wz)
     this.props.ws.socket.emit("move", {'vx' : vx, 'vy' : vy, 'wz' : wz})
   }
 
