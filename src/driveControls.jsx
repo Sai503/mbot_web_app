@@ -42,9 +42,9 @@ class DriveControlPanel extends React.Component {
     // Mounts the joystick to the screen when the DriveControl Panel is loaded
 
     setTimeout(() => {
-      let style = {internalFillColor: "#D86018",
-                   internalStrokeColor: "#954211",
-                   externalStrokeColor: "#954211"};
+      let style = {internalFillColor: "#1397cf",
+                   internalStrokeColor: "#2F65A7",
+                   externalStrokeColor: "#2F65A7"};
       new JoyStick('joy1Div', style, (stickData) => {
           let xJoy = stickData.y * this.state.speed / 10000;
           let yJoy = -stickData.x * this.state.speed / 10000;
