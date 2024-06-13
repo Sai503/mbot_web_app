@@ -19,9 +19,9 @@ function StatusMessage(props) {
     msg.push(
       <p className="robot-info" key="robotInfoPose">
         <i>Robot Pose:</i> (
-          <b>x:</b> {props.robotPose.x.toPrecision(3)},&nbsp;
-          <b>y:</b> {props.robotPose.y.toPrecision(3)},&nbsp;
-          <b>t:</b> {props.robotPose.theta.toPrecision(3)})
+          <b>x:</b> {props.robotPose.x.toFixed(3)},&nbsp;
+          <b>y:</b> {props.robotPose.y.toFixed(3)},&nbsp;
+          <b>t:</b> {props.robotPose.theta.toFixed(3)})
       </p>
     );
     msg.push(
