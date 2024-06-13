@@ -390,7 +390,7 @@ class MBotApp extends React.Component {
     if (loaded) {
       // Update the map grid.
       this.scene.setMapHeaderData(result.width, result.height, result.meters_per_cell, result.origin);
-      this.scene.updateCells(new_cells, config.MAP_COLOUR_LOW, config.MAP_COLOUR_HIGH);
+      this.scene.updateCells(new_cells);
     }
 
     if (loaded != this.state.mapLoaded) {

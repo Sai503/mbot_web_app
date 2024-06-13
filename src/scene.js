@@ -49,7 +49,7 @@ class MBotScene {
 
   async init() {
     this.app = new Application();
-    await this.app.init({resizeTo: window, backgroundColor: 0x999999 });
+    await this.app.init({resizeTo: window, backgroundColor: 0xc9d1d9 });
 
     this.robotImage = await Assets.load('/src/images/mbot.png');
   }
@@ -66,7 +66,7 @@ class MBotScene {
     this.gridGraphics.width = this.pixWidth;
     this.gridGraphics.height = this.pixHeight;
     this.gridGraphics.rect(0, 0, this.pixWidth, this.pixHeight)
-                     .fill(0xc9d1d9);
+                     .fill(getColor(0.5, config.MAP_COLOUR_LOW, config.MAP_COLOUR_HIGH));
     this.sceneContainer.addChild(this.gridGraphics);
 
     // Empty graphics to draw particles.
@@ -99,26 +99,19 @@ class MBotScene {
     this.dragStart = null;
     this.sceneContainer.interactive = true;
     this.sceneContainer.on('pointerdown', (event) => {
-      console.log("down");
         this.dragStart = event.data.getLocalPosition(this.sceneContainer.parent);
         // this.sceneContainer.alpha = 0.8;
     });
 
     this.sceneContainer.on('pointerup', (event) => {
-      let pt = new Point(this.sceneContainer.x , this.sceneContainer.y);
-      let pt0 = new Point(0, 0);
-      console.log("up", pt, this.sceneContainer.toLocal(pt0));
-        this.dragStart = null;
-        this.constrainSceneContainer();
+      this.dragStart = null;
+      this.constrainSceneContainer();
     });
 
     this.sceneContainer.on('pointerupoutside', (event) => {
-      let pt = new Point(this.sceneContainer.x , this.sceneContainer.y);
-      let pt0 = new Point(0, 0);
-      console.log("up out", pt, this.sceneContainer.toLocal(pt0));
-        this.dragStart = null;
-        // this.sceneContainer.alpha = 1;
-        this.constrainSceneContainer();
+      this.dragStart = null;
+      // this.sceneContainer.alpha = 1;
+      this.constrainSceneContainer();
     });
 
     this.sceneContainer.on('pointermove', (event) => {
@@ -143,7 +136,8 @@ class MBotScene {
     event.preventDefault();
     const scaleFactor = 1.1;
     let globalPos = this.sceneContainer.toLocal(new Point(event.x, event.y));
-    let minScale = Math.min(this.pixWidth, this.pixHeight) / (this.width * this.pixPerCell);
+    // The farthest out you can scale (assuming that the grid is square).
+    let minScale = Math.min(this.app.canvas.width, this.app.canvas.height) / (this.pixWidth);
     const direction = event.deltaY > 0 ? -1 : 1; // Negative if scrolling up, positive if down
     const scale = Math.pow(scaleFactor, direction);
     let scaleX = this.sceneContainer.scale.x * scale;
@@ -155,8 +149,10 @@ class MBotScene {
         this.sceneContainer.pivot.x = globalPos.x;
         this.sceneContainer.pivot.y = globalPos.y;
         this.sceneContainer.position.set(event.x, event.y);
+        this.constrainSceneContainer();
     }
     else {
+      // Don't zoom out more than the size of the screen.
         this.sceneContainer.scale.set(minScale);
         this.sceneContainer.position.set(0, 0);
         this.sceneContainer.pivot.x = 0;
@@ -167,13 +163,20 @@ class MBotScene {
   constrainSceneContainer() {
     // Don't let the scene container go out of the view more than it needs to.
     let pt0 = this.sceneContainer.toLocal(new Point(0, 0));
+    let pt1 = this.sceneContainer.toLocal(new Point(this.app.canvas.width, this.app.canvas.height));
     if (pt0.x < 0) {
       this.sceneContainer.pivot.x = 0;
       this.sceneContainer.x = 0;
     }
+    else if (pt1.x > this.pixWidth) {
+      this.sceneContainer.x += this.sceneContainer.scale.x * (pt1.x - this.pixWidth);
+    }
     if (pt0.y < 0) {
       this.sceneContainer.pivot.y = 0;
       this.sceneContainer.y = 0;
+    }
+    else if (pt1.y > this.pixHeight) {
+      this.sceneContainer.y += this.sceneContainer.scale.x * (pt1.y - this.pixHeight);
     }
   }
 
@@ -245,7 +248,7 @@ class MBotScene {
   clear() {
     this.gridGraphics.clear();
     this.gridGraphics.rect(0, 0, this.pixWidth, this.pixHeight)
-                     .fill(0xc9d1d9);
+                     .fill(getColor(0.5, config.MAP_COLOUR_LOW, config.MAP_COLOUR_HIGH));
 
     this.pathGraphics.clear();
     this.particlesGraphics.clear();
@@ -268,7 +271,7 @@ class MBotScene {
     this.robot.visible = !this.robot.visible;
   }
 
-  drawCells(cells, colour_low, colour_high, alpha="ff") {
+  drawCells(cells, colour_low=config.MAP_COLOUR_LOW, colour_high=config.MAP_COLOUR_HIGH, alpha="ff") {
     if (cells.length !== this.width * this.height) {
       console.warn("Error. Cannot render canvas: " + String(cells.length) + " != " + String(this.width*this.height));
       return;
@@ -278,6 +281,7 @@ class MBotScene {
 
     for (let c = 0; c < this.width; c++) {
       for (let r = 0; r < this.height; r++) {
+        // Skip any cells that already the colour of the background.
         if (cells[this.cellToIdx(r, c)] == 0) continue;
 
         let prob = (cells[this.cellToIdx(r, c)] + 127.) / 255.;
@@ -291,14 +295,14 @@ class MBotScene {
     this.mapCells = cells;
   }
 
-  updateCells(cells, colour_low, colour_high, alpha="ff") {
+  updateCells(cells, colour_low=config.MAP_COLOUR_LOW, colour_high=config.MAP_COLOUR_HIGH, alpha="ff") {
     if (cells.length !== this.width * this.height) {
       console.warn("Error. Cannot render canvas: " + String(cells.length) + " != " + String(this.width*this.height));
       return;
     }
 
     if (cells.length !== this.mapCells.length) {
-      console.log("redrawing from scratch");
+      console.log("Redrawing from scratch");
       this.drawCells(cells, colour_low, colour_high, alpha);
       return;
     }
@@ -309,7 +313,6 @@ class MBotScene {
         if (cells[idx] != this.mapCells[idx]){
           let prob = (cells[idx] + 127.) / 255.;
           let color = getColor(prob, colour_low, colour_high);
-          // this.gridGraphics.rect(color);
           let pos = this.cellToPixels(r, c);
           this.gridGraphics.rect(pos[0], pos[1], this.pixPerCell, this.pixPerCell).fill(color);
         }
