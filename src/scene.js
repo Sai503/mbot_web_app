@@ -85,8 +85,8 @@ class MBotScene {
     this.robot = new Sprite(this.robotImage);
     this.robot.anchor.set(0.5);
     // Move the sprite to the center of the screen
-    this.robotContainer.x = this.app.screen.width / 2;
-    this.robotContainer.y = this.app.screen.height / 2;
+    this.robotContainer.x = this.pixWidth / 2;
+    this.robotContainer.y = this.pixHeight / 2;
     this.robot.x = 0;
     this.robot.y = 0;
     this.robot.width = config.ROBOT_SIZE * this.pixelsPerMeter;
@@ -143,13 +143,12 @@ class MBotScene {
     let scaleX = this.sceneContainer.scale.x * scale;
     let scaleY = this.sceneContainer.scale.y * scale;
 
-    if (scaleX >= minScale && scaleY >= minScale) {
+    if (scaleX > minScale && scaleY > minScale) {
         // Zoom
         this.sceneContainer.scale.set(scaleX); // x = scaleX;
         this.sceneContainer.pivot.x = globalPos.x;
         this.sceneContainer.pivot.y = globalPos.y;
         this.sceneContainer.position.set(event.x, event.y);
-        this.constrainSceneContainer();
     }
     else {
       // Don't zoom out more than the size of the screen.
@@ -158,6 +157,8 @@ class MBotScene {
         this.sceneContainer.pivot.x = 0;
         this.sceneContainer.pivot.y = 0;
     }
+
+    this.constrainSceneContainer();
   }
 
   constrainSceneContainer() {
@@ -169,14 +170,26 @@ class MBotScene {
       this.sceneContainer.x = 0;
     }
     else if (pt1.x > this.pixWidth) {
-      this.sceneContainer.x += this.sceneContainer.scale.x * (pt1.x - this.pixWidth);
+      let new_x = this.sceneContainer.x + this.sceneContainer.scale.x * (pt1.x - this.pixWidth);
+      if (this.pixWidth * this.sceneContainer.scale.x < this.app.canvas.width) {
+        // If the scene is smaller than the screen, don't snap to the far side.
+        this.sceneContainer.pivot.x = 0;
+        new_x = Math.min(new_x, 0);
+      }
+      this.sceneContainer.x = new_x;
     }
     if (pt0.y < 0) {
       this.sceneContainer.pivot.y = 0;
       this.sceneContainer.y = 0;
     }
     else if (pt1.y > this.pixHeight) {
-      this.sceneContainer.y += this.sceneContainer.scale.x * (pt1.y - this.pixHeight);
+      let new_y = this.sceneContainer.y + this.sceneContainer.scale.x * (pt1.y - this.pixHeight);
+      if (this.pixHeight * this.sceneContainer.scale.x < this.app.canvas.height) {
+        // If the scene is smaller than the screen, don't snap to the bottom.
+        this.sceneContainer.pivot.y = 0;
+        new_y = Math.min(new_y, 0);
+      }
+      this.sceneContainer.y = new_y;
     }
   }
 
