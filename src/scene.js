@@ -30,7 +30,6 @@ function getColor(prob, colour_low, colour_high) {
 
 class MBotScene {
   constructor() {
-    // super(props);
     this.app = null;
 
     this.robotState = {x: 0, y: 0, theta: 0};
@@ -45,6 +44,8 @@ class MBotScene {
     this.mapCells = [];
 
     this.dragStart = null;
+    this.clickStart = null;
+    this.clickCallback = (u, v) => {};
   }
 
   async init() {
@@ -77,6 +78,11 @@ class MBotScene {
     this.pathGraphics = new Graphics();
     this.sceneContainer.addChild(this.pathGraphics);
 
+    // Empty graphics to draw clicked cell.
+    this.clickedCellGraphics = new Graphics();
+    this.sceneContainer.addChild(this.clickedCellGraphics);
+
+    // Robot Container.
     this.robotContainer = new Container();
 
     this.laserGraphics = new Graphics();
@@ -100,16 +106,29 @@ class MBotScene {
     this.sceneContainer.interactive = true;
     this.sceneContainer.on('pointerdown', (event) => {
         this.dragStart = event.data.getLocalPosition(this.sceneContainer.parent);
+        this.clickStart = event.data.getLocalPosition(this.sceneContainer.parent);
         // this.sceneContainer.alpha = 0.8;
     });
 
     this.sceneContainer.on('pointerup', (event) => {
+      let upPos = event.data.getLocalPosition(this.sceneContainer.parent);
+      if (this.clickStart) {
+        // Detect a click if the pointer was raised close to where it started.
+        if (Math.abs(this.clickStart.x - upPos.x) < 1 &&
+            Math.abs(this.clickStart.y - upPos.y) < 1) {
+          this.drawClickedCell(this.clickStart.x, this.clickStart.y);
+          // Call any user-defined click callback.
+          this.clickCallback(this.clickStart.x, this.clickStart.y);
+        }
+      }
       this.dragStart = null;
+      this.clickStart = null;
       this.constrainSceneContainer();
     });
 
     this.sceneContainer.on('pointerupoutside', (event) => {
       this.dragStart = null;
+      this.clickStart = null;
       // this.sceneContainer.alpha = 1;
       this.constrainSceneContainer();
     });
@@ -219,26 +238,26 @@ class MBotScene {
   }
 
   posToPixels(x, y) {
-    var u = (x - this.origin[0]) * this.pixelsPerMeter;
-    var v = this.pixHeight - (y - this.origin[1]) * this.pixelsPerMeter;
+    let u = (x - this.origin[0]) * this.pixelsPerMeter;
+    let v = this.pixHeight - (y - this.origin[1]) * this.pixelsPerMeter;
     return [u, v];
   }
 
   pixelsToPos(u, v){
-    var x = (u/this.pixelsPerMeter)+this.origin[0];
-    var y = this.pixHeight - (v/this.pixelsPerMeter)-this.origin[1];
-    return [x, y]
+    let x = (u / this.pixelsPerMeter) + this.origin[0];
+    let y = (this.pixHeight - v) / this.pixelsPerMeter + this.origin[1];
+    return [x, y];
   }
 
   cellToPixels(r, c) {
-    var v = ((this.height - r - 1) * this.pixPerCell);
-    var u = (c * this.pixPerCell);
+    let v = ((this.height - r - 1) * this.pixPerCell);
+    let u = (c * this.pixPerCell);
     return [u, v];
   }
 
   pixelsToCell(u, v) {
-    var row = Math.floor(u / this.pixPerCell);
-    var col = Math.floor(v / this.pixPerCell);
+    let row = Math.floor((this.pixHeight - v) / this.pixPerCell);
+    let col = Math.floor(u / this.pixPerCell);
     return [row, col];
   }
 
@@ -253,8 +272,8 @@ class MBotScene {
   }
 
   idxToCell(idx) {
-    var r = Math.floor(idx / this.width);
-    var c = idx % this.width;
+    let r = Math.floor(idx / this.width);
+    let c = idx % this.width;
     return [r, c];
   }
 
@@ -265,6 +284,7 @@ class MBotScene {
 
     this.pathGraphics.clear();
     this.particlesGraphics.clear();
+    this.clickedCellGraphics.clear()
 
     this.mapCells = [];
   }
@@ -379,6 +399,19 @@ class MBotScene {
 
   clearParticles() {
     this.particlesGraphics.clear();
+  }
+
+  drawClickedCell(u, v) {
+    let localPos = this.sceneContainer.toLocal(new Point(u, v));
+    const cell = this.pixelsToCell(localPos.x, localPos.y);
+    let pos = this.cellToPixels(cell[0], cell[1]);
+
+    this.clickedCellGraphics.clear()
+    this.clickedCellGraphics.rect(pos[0], pos[1], this.pixPerCell, this.pixPerCell).fill(0xff8300);
+  }
+
+  clearClickedCell() {
+    this.clickedCellGraphics.clear();
   }
 }
 

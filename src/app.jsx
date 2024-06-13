@@ -14,7 +14,7 @@ import { DriveControlPanel } from "./driveControls";
  *******************/
 
 function StatusMessage(props) {
-  var msg = [];
+  let msg = [];
   if(props.robotPose != null){
     msg.push(
       <p className="robot-info" key="robotInfoPose">
@@ -33,7 +33,10 @@ function StatusMessage(props) {
   if (props.clickedCell.length > 0) {
     msg.push(
       <p className="robot-info" key="robotInfoClicked">
-        <i>Clicked:</i> Meters [{props.posClickedCell[0]}, {props.posClickedCell[1]}], Cell: [{props.clickedCell[0]}, {props.clickedCell[1]}]
+        <i>Clicked:</i>&nbsp;
+        <b>x:</b> {props.posClickedCell[0].toFixed(3)},&nbsp;
+        <b>y:</b> {props.posClickedCell[1].toFixed(3)},&nbsp;
+        Cell: [{props.clickedCell[1]}, {props.clickedCell[0]}]
       </p>
     );
   }
@@ -157,12 +160,7 @@ class MBotApp extends React.Component {
 
   componentDidMount() {
     this.scene.createScene(this.canvasWrapperRef.current);
-    this.handleWindowChange(null);
-
-    // Get the window size and watch for resize events.
-    // this.rect = this.canvasWrapperRef.current.getBoundingClientRect();
-    window.addEventListener('resize', (evt) => this.handleWindowChange(evt));
-    window.addEventListener('scroll', (evt) => this.handleWindowChange(evt));
+    this.scene.clickCallback = (u, v) => this.handleMapClick(u, v);
 
     // Try to connect to the websocket backend.
     this.ws.attemptConnection();
@@ -271,29 +269,13 @@ class MBotApp extends React.Component {
    *  WINDOW EVENT HANDLERS
    ***************************/
 
-  handleWindowChange(evt) {
-    // this.rect = this.canvasWrapperRef.current.getBoundingClientRect();
-  }
-
-  handleMapClick(event) {
+  handleMapClick(u, v) {
     if (!this.state.mapLoaded) return;
-    let plan = true;
 
-    this.rect = this.clickCanvas.current.getBoundingClientRect();
+    let pos = this.scene.pixelsToPos(u, v);
+    let cell = this.scene.pixelsToCell(u, v);
 
-    var x = event.clientX - this.rect.left;
-    var y = this.rect.bottom - event.clientY;
-    let cs = this.rect.width / this.state.width;
-    let col = Math.floor(x / cs);
-    let row = Math.floor(y / cs);
-    this.setState({clickedCell: [col, row] });
-    var cellArr = this.cellToPixels(col, row)
-    cellArr = this.pixelsToPos(cellArr[0], cellArr[1]);
-    cellArr = [cellArr[0].toPrecision(4), cellArr[1].toPrecision(4)]
-    this.setState({posClickedCell: cellArr});
-    // Implement check for ctrl-click and whether an a* plan is required
-    // if(event.type === "mousedown") plan = true;
-    this.onPlan(row, col, plan);
+    this.setState({clickedCell: cell, posClickedCell: pos });
   }
 
   /********************
