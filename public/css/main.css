@@ -146,10 +146,6 @@ canvas {
   display: inline-block;
 }
 
-.algo-form {
-  display: inline-block;
-}
-
 .cen{
   margin-left: 5%;
   border-radius: 50px;
@@ -194,54 +190,6 @@ input[type="file"] {
   z-index: 1
 }
 
-.container2 {
-  position: relative;
-}
-
-.box {
-  position: relative;
-}
-
-.label{
-  position: relative;
-  margin: auto;
-}
-
-.icn{
-  padding: 50%;
-  cursor: pointer;
-}
-
-.icn:hover + .content{
-  left: 100%;
-  transform: translateX(9rem);
-  background-color: #cafaebef;
-  color: rgba(60,79,133,255);
-  visibility: visible;
-}
-
-.toggle{
-  z-index: 1;
-}
-.content {
-  position: absolute;
-  visibility: hidden;
-  font-size: 85%;
-  top: 0;
-  left: 100%;
-  width: 15em;
-  padding: 1.35rem;
-  display: flex;
-  justify-content: center;
-  background-color: rgba(16, 27, 55, 0);
-  color: rgba(16, 27, 55, 0);
-  z-index: 3;
-  align-items: flex-end;
-  text-align: center;
-  transform: translateX(12em);
-  transition: 0.5s ease-in-out;
-}
-
 .content h2 {
   display: block;
   font-size: 2rem;
@@ -256,12 +204,6 @@ input[type="file"] {
   font-size: 1.4rem;
   font-weight: 300;
   letter-spacing: 2px;
-}
-
-
-.toggle-containers{
-  position: relative;
-  /* display: flex; */
 }
 
 .button:hover {
@@ -358,8 +300,41 @@ input[type="file"] {
   padding-right: 1em;
   display: inline-block;
   text-decoration: none;
-  margin-top: auto;
-  margin-bottom: auto;
+  margin-bottom: 0.75em;
+}
+
+.toggle-wrapper:last-child {
+  margin-bottom: 0;
+}
+
+.info {
+  position: relative;
+  margin: auto;
+}
+
+.info-icon {
+  padding: 50%;
+  cursor: pointer;
+}
+
+.toggle{
+  z-index: 1;
+}
+
+.explain {
+  position: absolute;
+  visibility: hidden;
+  font-size: 75%;
+  left: 430px;
+  width: 350px;
+  padding: 0.75em;
+  background-color: #cafaebef;
+  color: #161e36;
+  z-index: 3;
+}
+
+.info:hover + .explain {
+  visibility: visible;
 }
 
 /* Nav */

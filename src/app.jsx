@@ -72,19 +72,19 @@ function ToggleSelect(props) {
   if (props.small) sizeCls = " small";
 
   return (
-    <div className="my-4 text-left">
-      <div className="row imgBox">
+    <div className="toggle-wrapper">
+      <div className="row">
         <div className="col-7">
           <span>{props.label}</span>
         </div>
-        <div className="col-1 label">
-          <div className="icn">
+        <div className="col-1 info">
+          <div className="info-icon">
             <FontAwesomeIcon icon={faCircleInfo} size="xs" />
           </div>
-          <div className="content">
-            {props.explain}
-          </div>
         </div>
+        <span className="explain">
+          {props.explain}
+        </span>
         <div className="col-4 text-right toggle">
           <label className={"switch" + sizeCls}>
             <input type="checkbox" className="mx-2" checked={props.checked}
@@ -430,34 +430,9 @@ class MBotApp extends React.Component {
                    goalCell: []});
   }
 
-  setGoal(goal) {
-    if (goal.length === 0) return false;
-
-    var idx = goal[1] + goal[0] * this.state.width;
-    var valid = this.mapCells[idx] < 0;
-
-    this.setState({goalCell: goal, goalValid: valid});
-
-    return valid;
-  }
-
   /**********************
    *   OTHER FUNCTIONS
    **********************/
-
-  onPlan(row, col, plan) {
-    if (!this.setGoal([row, col])) return;
-    // Clear visted canvas
-    this.visitGrid.clear();
-    var start_cell = this.pixelsToCell(this.state.x, this.state.y);
-    var plan_data = {type: "plan",
-                    data: {
-                       goal: [row, col],
-                       plan: plan
-                     }
-                   };
-    this.ws.socket.emit("plan", {goal: [row, col], plan: plan})
-  }
 
   startRequestInterval() {
     if (this.requestInterval !== null)  return;
@@ -510,7 +485,6 @@ class MBotApp extends React.Component {
     return (
       <div id="wrapper">
         <div id="main">
-
           <div id="canvas-container" ref={this.canvasWrapperRef}>
           </div>
         </div>
@@ -518,76 +492,61 @@ class MBotApp extends React.Component {
         <div id="sidenav" className={sidebarClasses}>
           <div id="toggle-nav" onClick={() => this.onSideBar()}><FontAwesomeIcon icon={faBars} /></div>
           <div className="inner">
-          <div className="title">
-            {this.state.robotName}
-          </div>
+            <div className="title">
+              {this.state.robotName}
+            </div>
+
             <div className="status-wrapper">
               <ConnectionStatus status={this.state.connection}/>
               <StatusMessage robotCell={this.state.robotCell}
-                             robotPose={this.state.robotPose}
-                             posClickedCell={this.state.posClickedCell} clickedCell={this.state.clickedCell} />
+                              robotPose={this.state.robotPose}
+                              posClickedCell={this.state.posClickedCell} clickedCell={this.state.clickedCell} />
             </div>
 
             <div className="row">
-              <div className="">
-
-                <ToggleSelect label={"Localization Mode"} explain={"Toggles localization mode and displays map."}
-                              checked={this.state.slamMode !== config.slam_mode.IDLE}
-                              onChange={ () => this.onLocalizationMode() }/>
-                  {this.state.slamMode !== config.slam_mode.IDLE &&
-                    <div className="subpanel">
-                      <ToggleSelect label={"Mapping Mode"} checked={this.state.slamMode === config.slam_mode.FULL_SLAM}
-                                    explain={"Toggles mapping mode on the robot."}
-                                    onChange={ () => this.onMappingMode() } small={true} />
-                      <div className="button-wrapper-col">
-                        <button className={"button" + (this.state.slamMode !== config.slam_mode.FULL_SLAM ? " inactive" : "")}
-                                onClick={() => this.onResetMap()}>Reset Map</button>
-                        <button className="button" onClick={() => this.saveMap()}>Download Map</button>
-                      </div>
+              <ToggleSelect label={"Localization Mode"} explain={"Toggles localization mode and displays map."}
+                            checked={this.state.slamMode !== config.slam_mode.IDLE}
+                            onChange={ () => this.onLocalizationMode() }/>
+                {this.state.slamMode !== config.slam_mode.IDLE &&
+                  <div className="subpanel">
+                    <ToggleSelect label={"Mapping Mode"} checked={this.state.slamMode === config.slam_mode.FULL_SLAM}
+                                  explain={"Toggles mapping mode on the robot."}
+                                  onChange={ () => this.onMappingMode() } small={true} />
+                    <div className="button-wrapper-col">
+                      <button className={"button" + (this.state.slamMode !== config.slam_mode.FULL_SLAM ? " inactive" : "")}
+                              onClick={() => this.onResetMap()}>Reset Map</button>
+                      <button className="button" onClick={() => this.saveMap()}>Download Map</button>
                     </div>
-                  }
-
-                  {/* TODO: Implement intial pose branch into code*/}
-                  {/* {<button className="button start-color2" onClick={() => this.onSetPose()}>Set Inital Pose</button>} */}
-
-                {/* {<label htmlFor="file-upload" className="button upload-color mb-3">
-                    Upload a Map
-                  </label>
-                  <input id="file-upload" type="file" onChange = {(event) => this.onFileChange(event)}/>} */}
-                { /* Checkboxes for map visualization. */}
-                <div className="box">
-                <ToggleSelect label={"Draw Robot"} checked={this.state.robotDisplay}
-                                explain={"Displays the robot on the map."}
-                                onChange={ () => this.changeRobot() }/>
-                </div>
-                <div className="box">
-                  <ToggleSelect label={"Draw Particles"} checked={this.state.particleDisplay}
-                                explain={"Shows all the positions the robot thinks it might be at."}
-                                onChange={ () => this.changeParticles() }/>
-                </div>
-
-                {/* // Remove temporarily since backend doesn't publish this. */}
-                {/* <ToggleSelect label={"Draw Costmap"} checked={this.state.costmapDisplay}
-                                 onChange={ () => this.changeCostMap() }/> */}
-                <ToggleSelect label={"Draw Lasers"} checked={this.state.laserDisplay}
-                              explain={"Displays the Lidar rays."}
-                              onChange={ () => this.changeLasers() }/>
-
-                { /* Drive mode and control panel. */}
-                <ToggleSelect label={"Drive Mode"} checked={this.state.drivingMode}
-                              explain={"To drive the robot with your keyboard, use A,D for left & right, " +
-                                       "W,S for forward & backward, and Q,E to rotate. " +
-                                       "Alternatively, you can click and drag the joystick and " +
-                                       "press the turn buttons to move the robot"}
-                              onChange={ () => this.onDrivingMode() }/>
-                {this.state.drivingMode &&
-                  <DriveControlPanel ws={this.ws} drivingMode={this.state.drivingMode} />
+                  </div>
                 }
+
+              { /* Checkboxes for map visualization. */}
+              <ToggleSelect label={"Draw Robot"} checked={this.state.robotDisplay}
+                              explain={"Displays the robot on the map."}
+                              onChange={ () => this.changeRobot() }/>
+
+              <ToggleSelect label={"Draw Particles"} checked={this.state.particleDisplay}
+                            explain={"Shows all the positions the robot thinks it might be at."}
+                            onChange={ () => this.changeParticles() }/>
+
+              <ToggleSelect label={"Draw Lasers"} checked={this.state.laserDisplay}
+                            explain={"Displays the Lidar rays."}
+                            onChange={ () => this.changeLasers() }/>
+
+              { /* Drive mode and control panel. */}
+              <ToggleSelect label={"Drive Mode"} checked={this.state.drivingMode}
+                            explain={"To drive the robot with your keyboard, use A,D for left & right, " +
+                                      "W,S for forward & backward, and Q,E to rotate. " +
+                                      "Alternatively, you can click and drag the joystick and " +
+                                      "press the turn buttons to move the robot"}
+                            onChange={ () => this.onDrivingMode() }/>
+              {this.state.drivingMode &&
+                <DriveControlPanel ws={this.ws} drivingMode={this.state.drivingMode} />
+              }
             </div>
           </div>
         </div>
       </div>
-    </div>
     );
   }
 }
