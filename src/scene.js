@@ -1,4 +1,4 @@
-import { Container, Graphics, Application, Assets, Sprite, Point } from 'pixi.js';
+import { Container, Graphics, GraphicsContext, Application, Assets, Sprite, Point } from 'pixi.js';
 
 import config from "./config.js";
 
@@ -61,14 +61,21 @@ class MBotScene {
 
     this.sceneContainer = new Container();
     this.app.stage.addChild(this.sceneContainer);
-    // document.body.appendChild(app.canvas);
 
-    this.gridGraphics = new Graphics();
-    this.gridGraphics.width = this.pixWidth;
-    this.gridGraphics.height = this.pixHeight;
-    this.gridGraphics.rect(0, 0, this.pixWidth, this.pixHeight)
-                     .fill(getColor(0.5, config.MAP_COLOUR_LOW, config.MAP_COLOUR_HIGH));
-    this.sceneContainer.addChild(this.gridGraphics);
+    // This container will hold all the grid cells.
+    this.gridContainer = new Container();
+    // Make the background all grey so we can ignore any uncertain cells.
+    let bkgd = new Graphics();
+    bkgd.rect(0, 0, this.pixWidth, this.pixHeight)
+        .fill(getColor(0.5, config.MAP_COLOUR_LOW, config.MAP_COLOUR_HIGH));
+    this.gridContainer.addChild(bkgd);
+    this.sceneContainer.addChild(this.gridContainer);
+
+    // Create a cell context to be used to draw cells later.
+    this.cellContext = new GraphicsContext()
+      .rect(0, 0, this.pixPerCell, this.pixPerCell)
+      .fill(0xffffff);
+    this.gridMap = {};
 
     // Empty graphics to draw particles.
     this.particlesGraphics = new Graphics();
@@ -107,7 +114,6 @@ class MBotScene {
     this.sceneContainer.on('pointerdown', (event) => {
         this.dragStart = event.data.getLocalPosition(this.sceneContainer.parent);
         this.clickStart = event.data.getLocalPosition(this.sceneContainer.parent);
-        // this.sceneContainer.alpha = 0.8;
     });
 
     this.sceneContainer.on('pointerup', (event) => {
@@ -222,6 +228,11 @@ class MBotScene {
 
     this.robot.width = config.ROBOT_SIZE * this.pixelsPerMeter;
     this.robot.height = config.ROBOT_SIZE * this.pixelsPerMeter;
+
+    // Make a new cell context of the right size.
+    this.cellContext = new GraphicsContext()
+      .rect(0, 0, this.pixPerCell, this.pixPerCell)
+      .fill(0xffffff);
   }
 
   getMapData() {
@@ -278,14 +289,19 @@ class MBotScene {
   }
 
   clear() {
-    this.gridGraphics.clear();
-    this.gridGraphics.rect(0, 0, this.pixWidth, this.pixHeight)
-                     .fill(getColor(0.5, config.MAP_COLOUR_LOW, config.MAP_COLOUR_HIGH));
+    // Clear all the current grid cells.
+    for (let i = 1; i < this.gridContainer.children.length; i++) {
+      this.gridContainer.children[i].destroy();
+    }
+    this.gridContainer.children.splice(1);
+    this.gridMap = {};
 
+    // Clear all saved graphics.
     this.pathGraphics.clear();
     this.particlesGraphics.clear();
     this.clickedCellGraphics.clear()
 
+    // Reset the cells.
     this.mapCells = [];
   }
 
@@ -314,14 +330,23 @@ class MBotScene {
 
     for (let c = 0; c < this.width; c++) {
       for (let r = 0; r < this.height; r++) {
+        let idx = this.cellToIdx(r, c);
         // Skip any cells that already the colour of the background.
-        if (cells[this.cellToIdx(r, c)] == 0) continue;
+        if (cells[idx] == 0) continue;
 
-        let prob = (cells[this.cellToIdx(r, c)] + 127.) / 255.;
+        let prob = (cells[idx] + 127.) / 255.;
         let color = getColor(prob, colour_low, colour_high);
-
         let pos = this.cellToPixels(r, c);
-        this.gridGraphics.rect(pos[0], pos[1], this.pixPerCell, this.pixPerCell).fill(color, alpha);
+
+        // Create a new cell object.
+        let cell = new Graphics(this.cellContext);
+        cell.x = pos[0];
+        cell.y = pos[1];
+        cell.tint = parseInt(color.slice(1), 16);
+        this.gridContainer.addChild(cell);
+
+        // Store the location of this cell in the children.
+        this.gridMap[idx] = this.gridContainer.children.length - 1;
       }
     }
 
@@ -335,7 +360,6 @@ class MBotScene {
     }
 
     if (cells.length !== this.mapCells.length) {
-      console.log("Redrawing from scratch");
       this.drawCells(cells, colour_low, colour_high, alpha);
       return;
     }
@@ -347,7 +371,20 @@ class MBotScene {
           let prob = (cells[idx] + 127.) / 255.;
           let color = getColor(prob, colour_low, colour_high);
           let pos = this.cellToPixels(r, c);
-          this.gridGraphics.rect(pos[0], pos[1], this.pixPerCell, this.pixPerCell).fill(color);
+          if (this.gridMap[idx]) {
+            // If we already have a grid cell at this location, just update its color.
+            this.gridContainer.children[this.gridMap[idx]].tint = parseInt(color.slice(1), 16);
+          }
+          else {
+            // If there was not a grid cell here, create a new one.
+            let cell = new Graphics(this.cellContext);
+            cell.x = pos[0];
+            cell.y = pos[1];
+            cell.tint = parseInt(color.slice(1), 16);
+            this.gridContainer.addChild(cell);
+            this.gridMap[idx] = this.gridContainer.children.length - 1;
+          }
+
         }
       }
     }
