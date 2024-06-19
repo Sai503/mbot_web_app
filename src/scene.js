@@ -28,20 +28,184 @@ function getColor(prob, colour_low, colour_high) {
 }
 
 
+class OccupancyGrid {
+  constructor(viewSize, colors = [config.MAP_COLOUR_LOW, config.MAP_COLOUR_HIGH]) {
+    // Map data.
+    this.width = 0;           // Map width in cells.
+    this.height = 0;         // Map height in cells.
+    this.metersPerCell = 0.05;
+    this.origin = [0, 0];
+    this.pixWidth = viewSize[0];   // Map width in pixels.
+    this.pixHeight = viewSize[1];  // Map height in pixels.
+    this.pixPerCell = 5;
+    this.pixelsPerMeter = this.pixPerCell / this.metersPerCell;
+    this.colorRange = colors;  // Colours to interpolate between for display.
+
+    this.mapCells = [];  // Current cell values.
+    this.gridMap = {};
+
+    this.gridContainer = null;  // Container for holding the grid render objects.
+    this.cellContext = null;    // Shared context for drawing the cells.
+  }
+
+  cellToPixels(r, c) {
+    let v = ((this.height - r - 1) * this.pixPerCell);
+    let u = (c * this.pixPerCell);
+    return [u, v];
+  }
+
+  pixelsToCell(u, v) {
+    let row = Math.floor((this.pixHeight - v) / this.pixPerCell);
+    let col = Math.floor(u / this.pixPerCell);
+    return [row, col];
+  }
+
+  posToCell(x, y) {
+    let i = Math.floor((x - this.origin[0]) / this.metersPerCell);
+    let j = Math.floor((y - this.origin[1]) / this.metersPerCell);
+    return [j, i];
+  }
+
+  cellToIdx(r, c) {
+    return c + r * this.width;
+  }
+
+  idxToCell(idx) {
+    let r = Math.floor(idx / this.width);
+    let c = idx % this.width;
+    return [r, c];
+  }
+
+  setMapData(width, height, m_per_cell = 0.05, origin = [0, 0]) {
+    // If this data is the same, no need to recompute or clear.
+    if (width === this.width && height === this.height &&
+        m_per_cell === this.metersPerCell &&
+        origin[0] === this.origin[0] && origin[1] === this.origin[1]) return;
+
+    this.width = width;
+    this.height = height;
+    this.metersPerCell = m_per_cell;
+    this.origin = origin;
+    this.pixPerCell = this.pixWidth / this.width;
+    this.pixelsPerMeter = this.pixWidth / this.width / m_per_cell;
+
+    this.clear();
+
+    // Make a new cell context of the right size.
+    if (this.cellContext) this.cellContext.destroy();
+    this.cellContext = new GraphicsContext()
+      .rect(0, 0, this.pixPerCell, this.pixPerCell)
+      .fill(0xffffff);
+  }
+
+  getMapData() {
+    if (this.mapCells.length !== this.width * this.height) {
+      return;
+    }
+
+    let mapData = {"cells": this.mapCells,
+                   "width": this.width,
+                   "height": this.height,
+                   "origin": this.origin,
+                   "metersPerCell": this.metersPerCell};
+    return mapData;
+  }
+
+  init() {
+    if (this.gridContainer) this.gridContainer.destroy();
+
+    // This container will hold all the grid cells.
+    this.gridContainer = new Container();
+    // Make the background all grey so we can ignore any uncertain cells.
+    let bkgd = new Graphics();
+    bkgd.rect(0, 0, this.pixWidth, this.pixHeight)
+        .fill(getColor(0.5, this.colorRange[0], this.colorRange[1]));
+    this.gridContainer.addChild(bkgd);
+
+    if (this.cellContext) this.cellContext.destroy();
+    // Create a cell context to be used to draw cells later.
+    this.cellContext = new GraphicsContext()
+      .rect(0, 0, this.pixPerCell, this.pixPerCell)
+      .fill(0xffffff);
+
+    this.gridMap = {};
+    this.mapCells = [];
+
+    return this.gridContainer;
+  }
+
+  clear() {
+    if (this.gridContainer) {
+      // Clear all the current grid cells. Skip the first since it's the background.
+      for (let i = 1; i < this.gridContainer.children.length; i++) {
+        this.gridContainer.children[i].destroy();
+      }
+      this.gridContainer.children.splice(1);  // Remove cells from the list. Again, keep background.
+    }
+    this.gridMap = {};
+
+    // Reset the cells.
+    this.mapCells = [];
+  }
+
+  updateCells(cells) {
+    if (cells.length !== this.width * this.height) {
+      console.warn("Error. Cannot render canvas: " + String(cells.length) + " != " + String(this.width*this.height));
+      return;
+    }
+
+    if (cells.length !== this.mapCells.length) {
+      this.clear();
+    }
+
+    for (let c = 0; c < this.width; c++) {
+      for (let r = 0; r < this.height; r++) {
+        let idx = this.cellToIdx(r, c);
+        if (cells[idx] != this.mapCells[idx]){
+          let prob = (cells[idx] + 127.) / 255.;
+          let color = getColor(prob, this.colorRange[0], this.colorRange[1]);
+          let pos = this.cellToPixels(r, c);
+
+          if (this.gridMap[idx]) {
+            // If we already have a grid cell at this location, just update its color.
+            this.gridContainer.children[this.gridMap[idx]].tint = parseInt(color.slice(1), 16);
+          }
+          else {
+            // Skip any cells that already the colour of the background.
+            if (cells[idx] == 0) continue;
+            // If there was not a grid cell here, create a new one.
+            let cell = new Graphics(this.cellContext);
+            cell.x = pos[0];
+            cell.y = pos[1];
+            cell.tint = parseInt(color.slice(1), 16);
+            this.gridContainer.addChild(cell);
+            // Save the order of this cell in the children.
+            this.gridMap[idx] = this.gridContainer.children.length - 1;
+          }
+        }
+      }
+    }
+
+    this.mapCells = cells;
+  }
+
+}
+
+
 class MBotScene {
   constructor() {
     this.app = null;
 
     this.robotState = {x: 0, y: 0, theta: 0};
     // Map data.
-    this.width = 0;
-    this.height = 0;
+    this.origin = [0, 0];
     this.metersPerCell = 0.05;
     this.pixWidth = config.CANVAS_DISPLAY_WIDTH;
     this.pixHeight = config.CANVAS_DISPLAY_HEIGHT;
     this.pixPerCell = 5;
     this.pixelsPerMeter = this.pixPerCell / this.metersPerCell;
-    this.mapCells = [];
+
+    this.occupancyGrid = new OccupancyGrid([this.pixWidth, this.pixHeight]);
 
     this.dragStart = null;
     this.clickStart = null;
@@ -62,20 +226,9 @@ class MBotScene {
     this.sceneContainer = new Container();
     this.app.stage.addChild(this.sceneContainer);
 
-    // This container will hold all the grid cells.
-    this.gridContainer = new Container();
-    // Make the background all grey so we can ignore any uncertain cells.
-    let bkgd = new Graphics();
-    bkgd.rect(0, 0, this.pixWidth, this.pixHeight)
-        .fill(getColor(0.5, config.MAP_COLOUR_LOW, config.MAP_COLOUR_HIGH));
-    this.gridContainer.addChild(bkgd);
-    this.sceneContainer.addChild(this.gridContainer);
-
-    // Create a cell context to be used to draw cells later.
-    this.cellContext = new GraphicsContext()
-      .rect(0, 0, this.pixPerCell, this.pixPerCell)
-      .fill(0xffffff);
-    this.gridMap = {};
+    // Initialize the occupancy grid and add its container to the scene.
+    let gridContainer = this.occupancyGrid.init();
+    this.sceneContainer.addChild(gridContainer);
 
     // Empty graphics to draw particles.
     this.particlesGraphics = new Graphics();
@@ -92,6 +245,7 @@ class MBotScene {
     // Robot Container.
     this.robotContainer = new Container();
 
+    // Empty graphics to draw the lasers, in the robot frame.
     this.laserGraphics = new Graphics();
     this.robotContainer.addChild(this.laserGraphics);
 
@@ -122,9 +276,12 @@ class MBotScene {
         // Detect a click if the pointer was raised close to where it started.
         if (Math.abs(this.clickStart.x - upPos.x) < 1 &&
             Math.abs(this.clickStart.y - upPos.y) < 1) {
-          this.drawClickedCell(this.clickStart.x, this.clickStart.y);
+          // Convert the clicked point into the scene frame in order to account for scaling and zooming.
+          let localPos = this.sceneContainer.toLocal(new Point(this.clickStart.x, this.clickStart.y));
+          // Draw the cell.
+          this.drawClickedCell(localPos.x, localPos.y);
           // Call any user-defined click callback.
-          this.clickCallback(this.clickStart.x, this.clickStart.y);
+          this.clickCallback(localPos.x, localPos.y);
         }
       }
       this.dragStart = null;
@@ -135,7 +292,6 @@ class MBotScene {
     this.sceneContainer.on('pointerupoutside', (event) => {
       this.dragStart = null;
       this.clickStart = null;
-      // this.sceneContainer.alpha = 1;
       this.constrainSceneContainer();
     });
 
@@ -163,7 +319,7 @@ class MBotScene {
     let globalPos = this.sceneContainer.toLocal(new Point(event.x, event.y));
     // The farthest out you can scale (assuming that the grid is square).
     let minScale = Math.min(this.app.canvas.width, this.app.canvas.height) / (this.pixWidth);
-    const direction = event.deltaY > 0 ? -1 : 1; // Negative if scrolling up, positive if down
+    const direction = event.deltaY > 0 ? -1 : 1;  // Negative if scrolling up, positive if down
     const scale = Math.pow(scaleFactor, direction);
     let scaleX = this.sceneContainer.scale.x * scale;
     let scaleY = this.sceneContainer.scale.y * scale;
@@ -219,33 +375,18 @@ class MBotScene {
   }
 
   setMapHeaderData(width, height, m_per_cell = 0.05, origin = [0, 0]) {
-    this.width = width;
-    this.height = height;
+    this.occupancyGrid.setMapData(width, height, m_per_cell, origin);
     this.metersPerCell = m_per_cell;
-    this.pixPerCell = this.pixWidth / this.width;
-    this.pixelsPerMeter = this.pixWidth / this.width / m_per_cell;
+    this.pixPerCell = this.pixWidth / width;
+    this.pixelsPerMeter = this.pixWidth / width / m_per_cell;
     this.origin = origin;
 
     this.robot.width = config.ROBOT_SIZE * this.pixelsPerMeter;
     this.robot.height = config.ROBOT_SIZE * this.pixelsPerMeter;
-
-    // Make a new cell context of the right size.
-    this.cellContext = new GraphicsContext()
-      .rect(0, 0, this.pixPerCell, this.pixPerCell)
-      .fill(0xffffff);
   }
 
   getMapData() {
-    if (this.mapCells.length !== this.width * this.height) {
-      return;
-    }
-
-    let mapData = {"cells": this.mapCells,
-                   "width": this.width,
-                   "height": this.height,
-                   "origin": this.origin,
-                   "metersPerCell": this.metersPerCell};
-    return mapData;
+    return this.occupancyGrid.getMapData();
   }
 
   posToPixels(x, y) {
@@ -261,48 +402,25 @@ class MBotScene {
   }
 
   cellToPixels(r, c) {
-    let v = ((this.height - r - 1) * this.pixPerCell);
-    let u = (c * this.pixPerCell);
-    return [u, v];
+    return this.occupancyGrid.cellToPixels(r, c);
   }
 
   pixelsToCell(u, v) {
-    let row = Math.floor((this.pixHeight - v) / this.pixPerCell);
-    let col = Math.floor(u / this.pixPerCell);
-    return [row, col];
+    return this.occupancyGrid.pixelsToCell(u, v);
   }
 
   posToCell(x, y) {
-    let i = Math.floor((x - this.origin[0]) / this.metersPerCell);
-    let j = Math.floor((y - this.origin[1]) / this.metersPerCell);
-    return [j, i];
-  }
-
-  cellToIdx(r, c) {
-    return c + r * this.width;
-  }
-
-  idxToCell(idx) {
-    let r = Math.floor(idx / this.width);
-    let c = idx % this.width;
-    return [r, c];
+    return this.occupancyGrid.posToCell(x, y);
   }
 
   clear() {
-    // Clear all the current grid cells.
-    for (let i = 1; i < this.gridContainer.children.length; i++) {
-      this.gridContainer.children[i].destroy();
-    }
-    this.gridContainer.children.splice(1);
-    this.gridMap = {};
+    // Clear the occupancy grid.
+    this.occupancyGrid.clear();
 
     // Clear all saved graphics.
     this.pathGraphics.clear();
     this.particlesGraphics.clear();
-    this.clickedCellGraphics.clear()
-
-    // Reset the cells.
-    this.mapCells = [];
+    this.clickedCellGraphics.clear();
   }
 
   updateRobot(x, y, theta = 0) {
@@ -320,79 +438,17 @@ class MBotScene {
     this.robot.visible = !this.robot.visible;
   }
 
-  drawCells(cells, colour_low=config.MAP_COLOUR_LOW, colour_high=config.MAP_COLOUR_HIGH, alpha="ff") {
-    if (cells.length !== this.width * this.height) {
-      console.warn("Error. Cannot render canvas: " + String(cells.length) + " != " + String(this.width*this.height));
-      return;
+  updateCells(cells) {
+    // If this map is fully new, clear any other components on the screen.
+    if (cells.length !== this.occupancyGrid.mapCells.length) {
+      this.clearPath();
+      this.clearClickedCell();
     }
 
-    this.clear();
-
-    for (let c = 0; c < this.width; c++) {
-      for (let r = 0; r < this.height; r++) {
-        let idx = this.cellToIdx(r, c);
-        // Skip any cells that already the colour of the background.
-        if (cells[idx] == 0) continue;
-
-        let prob = (cells[idx] + 127.) / 255.;
-        let color = getColor(prob, colour_low, colour_high);
-        let pos = this.cellToPixels(r, c);
-
-        // Create a new cell object.
-        let cell = new Graphics(this.cellContext);
-        cell.x = pos[0];
-        cell.y = pos[1];
-        cell.tint = parseInt(color.slice(1), 16);
-        this.gridContainer.addChild(cell);
-
-        // Store the location of this cell in the children.
-        this.gridMap[idx] = this.gridContainer.children.length - 1;
-      }
-    }
-
-    this.mapCells = cells;
+    this.occupancyGrid.updateCells(cells);
   }
 
-  updateCells(cells, colour_low=config.MAP_COLOUR_LOW, colour_high=config.MAP_COLOUR_HIGH, alpha="ff") {
-    if (cells.length !== this.width * this.height) {
-      console.warn("Error. Cannot render canvas: " + String(cells.length) + " != " + String(this.width*this.height));
-      return;
-    }
-
-    if (cells.length !== this.mapCells.length) {
-      this.drawCells(cells, colour_low, colour_high, alpha);
-      return;
-    }
-
-    for (let c = 0; c < this.width; c++) {
-      for (let r = 0; r < this.height; r++) {
-        let idx = this.cellToIdx(r, c);
-        if (cells[idx] != this.mapCells[idx]){
-          let prob = (cells[idx] + 127.) / 255.;
-          let color = getColor(prob, colour_low, colour_high);
-          let pos = this.cellToPixels(r, c);
-          if (this.gridMap[idx]) {
-            // If we already have a grid cell at this location, just update its color.
-            this.gridContainer.children[this.gridMap[idx]].tint = parseInt(color.slice(1), 16);
-          }
-          else {
-            // If there was not a grid cell here, create a new one.
-            let cell = new Graphics(this.cellContext);
-            cell.x = pos[0];
-            cell.y = pos[1];
-            cell.tint = parseInt(color.slice(1), 16);
-            this.gridContainer.addChild(cell);
-            this.gridMap[idx] = this.gridContainer.children.length - 1;
-          }
-
-        }
-      }
-    }
-
-    this.mapCells = cells;
-  }
-
-  drawLasers(ranges, thetas, color = "green", line_width = 1) {
+  drawLasers(ranges, thetas, color = "green", line_width = 0.5) {
     this.laserGraphics.clear();
     this.laserGraphics.beginPath();
     for (var i = 0; i < ranges.length; i++) {
@@ -409,7 +465,7 @@ class MBotScene {
     this.laserGraphics.clear();
   }
 
-  drawPath(path, color = "rgb(255, 25, 25)", line_width = 2) {
+  drawPath(path, color = "rgb(255, 25, 25)", line_width = 0.5) {
     this.pathGraphics.clear();
     this.pathGraphics.beginPath();
     let current = this.posToPixels(path[0][0], path[0][1]);
@@ -439,8 +495,7 @@ class MBotScene {
   }
 
   drawClickedCell(u, v) {
-    let localPos = this.sceneContainer.toLocal(new Point(u, v));
-    const cell = this.pixelsToCell(localPos.x, localPos.y);
+    const cell = this.pixelsToCell(u, v);
     let pos = this.cellToPixels(cell[0], cell[1]);
 
     this.clickedCellGraphics.clear()
