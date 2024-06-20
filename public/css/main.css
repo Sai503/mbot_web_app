@@ -325,18 +325,14 @@ input[type="file"] {
 
 .explain {
   position: absolute;
-  visibility: hidden;
-  font-size: 75%;
+  font-size: 14px;
   left: 430px;
-  width: 350px;
+  width: fit-content;
+  max-width: 500px;
   padding: 0.75em;
   background-color: #cafaebef;
   color: #161e36;
   z-index: 3;
-}
-
-.info:hover + .explain {
-  visibility: visible;
 }
 
 /* Nav */

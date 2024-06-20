@@ -67,34 +67,52 @@ function ConnectionStatus(connection) {
   );
 }
 
-function ToggleSelect(props) {
+class ToggleSelect extends React.Component {
+  constructor(props) {
+    super(props);
+
+    // React state.
+    this.state = {
+      viewInfo: false,
+      top: 0
+    }
+  }
+
+  render() {
   let sizeCls = "";
-  if (props.small) sizeCls = " small";
+  if (this.props.small) sizeCls = " small";
 
   return (
     <div className="toggle-wrapper">
       <div className="row">
         <div className="col-7">
-          <span>{props.label}</span>
+          <span>{this.props.label}</span>
         </div>
-        <div className="col-1 info">
+        <div className="col-1 info"
+             onMouseEnter={(evt) => {
+                            this.setState({viewInfo: true, top: evt.clientY - 20});
+                          }}
+             onMouseLeave={(evt) => { this.setState({viewInfo: false}); }}>
           <div className="info-icon">
             <FontAwesomeIcon icon={faCircleInfo} size="xs" />
           </div>
         </div>
-        <span className="explain">
-          {props.explain}
-        </span>
+        {this.state.viewInfo &&
+          <span className="explain" style={{top: this.state.top}}>
+            {this.props.explain}
+          </span>
+        }
         <div className="col-4 text-right toggle">
           <label className={"switch" + sizeCls}>
-            <input type="checkbox" className="mx-2" checked={props.checked}
-                  onChange={() => props.onChange()}/>
+            <input type="checkbox" className="mx-2" checked={this.props.checked}
+                  onChange={() => this.props.onChange()}/>
             <span className={"slider round" + sizeCls}></span>
           </label>
         </div>
       </div>
     </div>
   );
+}
 }
 
 /*******************
