@@ -216,7 +216,8 @@ class MBotScene {
     this.app = new Application();
     await this.app.init({resizeTo: window, backgroundColor: 0xc9d1d9 });
 
-    this.robotImage = await Assets.load('/src/images/mbot.png');
+    const imgUrl = new URL('./images/mbot.png', import.meta.url).href;
+    this.robotImage = await Assets.load(imgUrl);
   }
 
   createScene(ele) {
