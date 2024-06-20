@@ -160,7 +160,7 @@ class MBotApp extends React.Component {
 
   componentDidMount() {
     this.scene.createScene(this.canvasWrapperRef.current);
-    this.scene.clickCallback = (u, v) => this.handleMapClick(u, v);
+    this.scene.clickCallback = (pos) => this.handleMapClick(pos);
 
     // Try to connect to the websocket backend.
     this.ws.attemptConnection();
@@ -269,13 +269,17 @@ class MBotApp extends React.Component {
    *  WINDOW EVENT HANDLERS
    ***************************/
 
-  handleMapClick(u, v) {
-    if (!this.state.mapLoaded) return;
+  handleMapClick(pos) {
+    if (pos.length === 0 || !this.state.mapLoaded) {
+      // If the map is not loaded or an empty cell is passed, clear.
+      this.setState({clickedCell: [], posClickedCell: [] });
+      return;
+    }
 
-    let pos = this.scene.pixelsToPos(u, v);
-    let cell = this.scene.pixelsToCell(u, v);
+    let posMeters = this.scene.pixelsToPos(pos[0], pos[1]);
+    let cell = this.scene.pixelsToCell(pos[0], pos[1]);
 
-    this.setState({clickedCell: cell, posClickedCell: pos });
+    this.setState({clickedCell: cell, posClickedCell: posMeters });
   }
 
   /********************

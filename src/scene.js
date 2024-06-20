@@ -209,7 +209,7 @@ class MBotScene {
 
     this.dragStart = null;
     this.clickStart = null;
-    this.clickCallback = (u, v) => {};
+    this.clickCallback = (pos) => {};
   }
 
   async init() {
@@ -281,7 +281,7 @@ class MBotScene {
           // Draw the cell.
           this.drawClickedCell(localPos.x, localPos.y);
           // Call any user-defined click callback.
-          this.clickCallback(localPos.x, localPos.y);
+          this.clickCallback([localPos.x, localPos.y]);
         }
       }
       this.dragStart = null;
@@ -504,6 +504,7 @@ class MBotScene {
 
   clearClickedCell() {
     this.clickedCellGraphics.clear();
+    this.clickCallback([]);
   }
 }
 
