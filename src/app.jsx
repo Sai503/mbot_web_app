@@ -537,8 +537,7 @@ class MBotApp extends React.Component {
               <ToggleSelect label={"Drive Mode"} checked={this.state.drivingMode}
                             explain={"To drive the robot with your keyboard, use A,D for left & right, " +
                                       "W,S for forward & backward, and Q,E to rotate. " +
-                                      "Alternatively, you can click and drag the joystick and " +
-                                      "press the turn buttons to move the robot"}
+                                      "Or, use the joystick and turn buttons in the drive panel."}
                             onChange={ () => this.onDrivingMode() }/>
               {this.state.drivingMode &&
                 <DriveControlPanel ws={this.ws} drivingMode={this.state.drivingMode} />
