@@ -55,7 +55,7 @@ a:hover {
 }
 
 #wrapper {
-  height: 100vh;  /* Stretch to height of the full page. */
+  /* height: 100vh;  Stretch to height of the full page. */
   display: grid;
   grid-template-columns: min-content 1fr;
   grid-template-rows: 1fr;
@@ -65,6 +65,8 @@ a:hover {
 #sidenav {
   grid-area: nav;
   width: 400px;
+  height: 100vh;
+  overflow-y: auto;
   background-color: rgba(3, 12, 38, 0.924);
   color: #fff;
 }
@@ -73,6 +75,7 @@ a:hover {
   grid-area: main;
   width: auto;
   background-color: #00274c36;
+  height: 100vh;
 }
 
 .inner {
@@ -118,19 +121,12 @@ a:hover {
   background-color: #22476a;
 }
 
-#canvas-wrapper {
-  display: grid;
-  justify-items: center;
-  align-items: center;
-}
-
 canvas {
   padding: 0;
-  grid-column: 1;
-  grid-row: 1;
   display: block;
   float: left;
-  max-width: 100%;
+  width: 100%;
+  height: 100%;
 }
 
 .roboticon {
@@ -147,10 +143,6 @@ canvas {
 }
 
 .file-input-wrapper {
-  display: inline-block;
-}
-
-.algo-form {
   display: inline-block;
 }
 
@@ -198,54 +190,6 @@ input[type="file"] {
   z-index: 1
 }
 
-.container2 {
-  position: relative;
-}
-
-.box {
-  position: relative;
-}
-
-.label{
-  position: relative;
-  margin: auto;
-}
-
-.icn{
-  padding: 50%;
-  cursor: pointer;
-}
-
-.icn:hover + .content{
-  left: 100%;
-  transform: translateX(9rem);
-  background-color: #cafaebef;
-  color: rgba(60,79,133,255);
-  visibility: visible;
-}
-
-.toggle{
-  z-index: 1;
-}
-.content {
-  position: absolute;
-  visibility: hidden;
-  font-size: 85%;
-  top: 0;
-  left: 100%;
-  width: 15em;
-  padding: 1.35rem;
-  display: flex;
-  justify-content: center;
-  background-color: rgba(16, 27, 55, 0);
-  color: rgba(16, 27, 55, 0);
-  z-index: 3;
-  align-items: flex-end;
-  text-align: center;
-  transform: translateX(12em);
-  transition: 0.5s ease-in-out;
-}
-
 .content h2 {
   display: block;
   font-size: 2rem;
@@ -260,12 +204,6 @@ input[type="file"] {
   font-size: 1.4rem;
   font-weight: 300;
   letter-spacing: 2px;
-}
-
-
-.toggle-containers{
-  position: relative;
-  /* display: flex; */
 }
 
 .button:hover {
@@ -324,6 +262,7 @@ input[type="file"] {
 .subpanel {
   font-size: 80%;
   padding-left: 1em;
+  margin-bottom: 1em;
 }
 
 .status-wrapper {
@@ -362,8 +301,38 @@ input[type="file"] {
   padding-right: 1em;
   display: inline-block;
   text-decoration: none;
-  margin-top: auto;
-  margin-bottom: auto;
+  margin-bottom: 0.75em;
+  width: 100%;
+}
+
+.toggle-wrapper:last-child {
+  margin-bottom: 0;
+}
+
+.info {
+  position: relative;
+  margin: auto;
+}
+
+.info-icon {
+  padding: 50%;
+  cursor: pointer;
+}
+
+.toggle{
+  z-index: 1;
+}
+
+.explain {
+  position: absolute;
+  font-size: 14px;
+  left: 430px;
+  width: fit-content;
+  max-width: 500px;
+  padding: 0.75em;
+  background-color: #cafaebef;
+  color: #161e36;
+  z-index: 3;
 }
 
 /* Nav */

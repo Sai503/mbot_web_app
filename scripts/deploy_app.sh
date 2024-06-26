@@ -15,6 +15,8 @@ fi
 echo
 echo "Installing the web app..."
 echo
+# Remove any old files to ensure we don't make duplicates.
+sudo rm -rf /data/www/mbot/*
 # Move the build files into the public repo.
 sudo cp -r dist/* /data/www/mbot/
 

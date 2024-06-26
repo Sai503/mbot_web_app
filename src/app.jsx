@@ -1,17 +1,11 @@
 import React from "react";
 
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
-
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faBars, faCircleInfo } from '@fortawesome/free-solid-svg-icons'
 
 import config from "./config.js";
-import { normalizeAngle } from "./util";
 import { WSHelper } from "./web.js";
-import { DrawRobot } from "./robot";
-import { DrawCells, DrawLasers, DrawPaths, DrawParticles, DrawCostmap } from "./canvas";
 import { downloadMapFile } from "./map.js";
-import { getColor, GridCellCanvas } from "./drawing.js"
 import { DriveControlPanel } from "./driveControls";
 
 
@@ -20,11 +14,14 @@ import { DriveControlPanel } from "./driveControls";
  *******************/
 
 function StatusMessage(props) {
-  var msg = [];
-  if(props.robotPose[0] != null){
+  let msg = [];
+  if(props.robotPose != null){
     msg.push(
       <p className="robot-info" key="robotInfoPose">
-        <i>Robot Pose:</i> (<b>x:</b> {props.robotPose[0]}, <b>y:</b>  {props.robotPose[1]}, <b>t:</b>  {props.robotPose[2]})
+        <i>Robot Pose:</i> (
+          <b>x:</b> {props.robotPose.x.toFixed(3)},&nbsp;
+          <b>y:</b> {props.robotPose.y.toFixed(3)},&nbsp;
+          <b>t:</b> {props.robotPose.theta.toFixed(3)})
       </p>
     );
     msg.push(
@@ -36,7 +33,10 @@ function StatusMessage(props) {
   if (props.clickedCell.length > 0) {
     msg.push(
       <p className="robot-info" key="robotInfoClicked">
-        <i>Clicked:</i> Meters [{props.posClickedCell[0]}, {props.posClickedCell[1]}], Cell: [{props.clickedCell[0]}, {props.clickedCell[1]}]
+        <i>Clicked:</i>&nbsp;
+        <b>x:</b> {props.posClickedCell[0].toFixed(3)},&nbsp;
+        <b>y:</b> {props.posClickedCell[1].toFixed(3)},&nbsp;
+        Cell: [{props.clickedCell[1]}, {props.clickedCell[0]}]
       </p>
     );
   }
@@ -67,34 +67,52 @@ function ConnectionStatus(connection) {
   );
 }
 
-function ToggleSelect(props) {
+class ToggleSelect extends React.Component {
+  constructor(props) {
+    super(props);
+
+    // React state.
+    this.state = {
+      viewInfo: false,
+      top: 0
+    }
+  }
+
+  render() {
   let sizeCls = "";
-  if (props.small) sizeCls = " small";
+  if (this.props.small) sizeCls = " small";
 
   return (
-    <div className="my-4 text-left">
-      <div className="row imgBox">
+    <div className="toggle-wrapper">
+      <div className="row">
         <div className="col-7">
-          <span>{props.label}</span>
+          <span>{this.props.label}</span>
         </div>
-        <div className="col-1 label">
-          <div className="icn">
+        <div className="col-1 info"
+             onMouseEnter={(evt) => {
+                            this.setState({viewInfo: true, top: evt.clientY - 20});
+                          }}
+             onMouseLeave={(evt) => { this.setState({viewInfo: false}); }}>
+          <div className="info-icon">
             <FontAwesomeIcon icon={faCircleInfo} size="xs" />
           </div>
-          <div className="content">
-            {props.explain}
-          </div>
         </div>
+        {this.state.viewInfo &&
+          <span className="explain" style={{top: this.state.top}}>
+            {this.props.explain}
+          </span>
+        }
         <div className="col-4 text-right toggle">
           <label className={"switch" + sizeCls}>
-            <input type="checkbox" className="mx-2" checked={props.checked}
-                  onChange={() => props.onChange()}/>
+            <input type="checkbox" className="mx-2" checked={this.props.checked}
+                  onChange={() => this.props.onChange()}/>
             <span className={"slider round" + sizeCls}></span>
           </label>
         </div>
       </div>
     </div>
   );
+}
 }
 
 /*******************
@@ -107,20 +125,13 @@ class MBotApp extends React.Component {
 
     // React state.
     this.state = {
-      robotName: "MBOT-OMNI-???",
+      robotName: "MBOT-???",
       connection: false,
       // Map parameters.
-      width: 0,
-      height: 0,
-      origin: [0, 0],
-      metersPerCell: 0,
-      pixelsPerMeter: 0,
-      cellSize: 0,
       mapLoaded: false,
       mapfile: null,
       goalCell: [],
       goalValid: true,
-      // localMapFileLocation: "current.map",
       // Mode variables.
       slamMode: config.slam_mode.IDLE,
       drivingMode: false,
@@ -128,29 +139,17 @@ class MBotApp extends React.Component {
       omni: false,
       diff: false,
       // Robot parameters.
-      xPose: 0,
-      yPose: 0,
-      evtPose: 0,
-      posUpdateCount: 0,
-      x: config.MAP_DISPLAY_WIDTH / 2,
-      y: config.MAP_DISPLAY_WIDTH / 2,
-      theta: 0,
+      robotPose: {x: 0, y: 0, theta: 0},
+      robotCell: [0, 0],
       // Visualization elements.
-      path: [],
       clickedCell: [],
       posClickedCell: [],
-      drawLasers: [],
-      drawPaths: [],
-      drawCostmap: [],
-      drawParticles: [],
       // Flags to display elements.
       laserDisplay: false,
       robotDisplay: true,
       particleDisplay: false,
       costmapDisplay: false,
     };
-
-    this.mapCells = [];
 
     this.ws = new WSHelper(config.HOST, config.PORT, config.ENDPOINT, config.CONNECT_PERIOD);
     this.ws.statusCallback = (status) => { this.updateSocketStatus(status); };
@@ -165,11 +164,8 @@ class MBotApp extends React.Component {
     this.ws.handleSLAMStatus = (evt) => { this.handleSLAMStatus(evt)};
     this.ws.handleObstacle = (evt) => { this.handleObstacles(evt)};
 
-    this.visitGrid = new GridCellCanvas();
-    this.visitCellsCanvas = React.createRef();
-    this.clickCanvas = React.createRef();
-    this.mapGrid = new GridCellCanvas();
-    this.mapCanvas = React.createRef();
+    this.canvasWrapperRef = React.createRef();
+    this.scene = props.scene;
 
     // Map request interval.
     this.requestInterval = null;
@@ -181,14 +177,8 @@ class MBotApp extends React.Component {
    ********************/
 
   componentDidMount() {
-    this.visitGrid.init(this.visitCellsCanvas.current);
-    this.mapGrid.init(this.mapCanvas.current);
-    this.handleWindowChange(null);
-
-    // Get the window size and watch for resize events.
-    this.rect = this.clickCanvas.current.getBoundingClientRect();
-    window.addEventListener('resize', (evt) => this.handleWindowChange(evt));
-    window.addEventListener('scroll', (evt) => this.handleWindowChange(evt));
+    this.scene.createScene(this.canvasWrapperRef.current);
+    this.scene.clickCallback = (pos) => this.handleMapClick(pos);
 
     // Try to connect to the websocket backend.
     this.ws.attemptConnection();
@@ -215,22 +205,17 @@ class MBotApp extends React.Component {
   }
 
   saveMap() {
-    if (this.mapCells.length !== this.state.width * this.state.height) {
+    const mapData = this.scene.getMapData();
+
+    if (mapData === null) {
       console.log("Error saving map: Invalid map data");
       return;
     }
-
-    let mapData = {"cells": this.mapCells,
-                   "width": this.state.width,
-                   "height": this.state.height,
-                   "origin": this.state.origin,
-                   "metersPerCell": this.state.metersPerCell};
 
     downloadMapFile(mapData);
   }
 
   onMappingMode() {
-    console.log(this.state.slamMode);
     if (this.state.slamMode === config.slam_mode.FULL_SLAM) {
       // If we're in full slam, we need to reset the robot to localization only mode.
       this.ws.socket.emit('reset', {'mode' : config.slam_mode.LOCALIZATION_ONLY, 'retain_pose' : true});
@@ -302,29 +287,17 @@ class MBotApp extends React.Component {
    *  WINDOW EVENT HANDLERS
    ***************************/
 
-  handleWindowChange(evt) {
-    this.rect = this.clickCanvas.current.getBoundingClientRect();
-  }
+  handleMapClick(pos) {
+    if (pos.length === 0 || !this.state.mapLoaded) {
+      // If the map is not loaded or an empty cell is passed, clear.
+      this.setState({clickedCell: [], posClickedCell: [] });
+      return;
+    }
 
-  handleMapClick(event) {
-    if (!this.state.mapLoaded) return;
-    let plan = true;
+    let posMeters = this.scene.pixelsToPos(pos[0], pos[1]);
+    let cell = this.scene.pixelsToCell(pos[0], pos[1]);
 
-    this.rect = this.clickCanvas.current.getBoundingClientRect();
-
-    var x = event.clientX - this.rect.left;
-    var y = this.rect.bottom - event.clientY;
-    let cs = this.rect.width / this.state.width;
-    let col = Math.floor(x / cs);
-    let row = Math.floor(y / cs);
-    this.setState({clickedCell: [col, row] });
-    var cellArr = this.cellToPixels(col, row)
-    cellArr = this.pixelsToPos(cellArr[0], cellArr[1]);
-    cellArr = [cellArr[0].toPrecision(4), cellArr[1].toPrecision(4)]
-    this.setState({posClickedCell: cellArr});
-    // Implement check for ctrl-click and whether an a* plan is required
-    // if(event.type === "mousedown") plan = true;
-    this.onPlan(row, col, plan);
+    this.setState({clickedCell: cell, posClickedCell: posMeters });
   }
 
   /********************
@@ -353,15 +326,10 @@ class MBotApp extends React.Component {
   handlePoses(evt){
     // Sets the robot position
     if (this.state.mapLoaded > 0) {
-      // Convert the robot position in meters in the map coordinates to pixels
-      // in the canvas coordinates.
-      this.setState({posUpdateCount: this.state.posUpdateCount+1})
-      if(this.state.posUpdateCount == 5){
-        this.setState({poseX: evt.x.toPrecision(4), poseY: evt.y.toPrecision(4), poseTheta: evt.theta.toPrecision(4)});
-        this.setState({posUpdateCount: 0})
-      }
-      var pix = this.posToPixels(evt.x, evt.y);
-      this.setRobotPos(pix[0], pix[1], evt.theta);
+      this.scene.updateRobot(evt.x, evt.y, evt.theta);
+      const robotCell = this.scene.posToCell(evt.x, evt.y);
+      this.setState({robotPose: {x: evt.x, y: evt.y, theta: evt.theta},
+                     robotCell: robotCell});
     }
   }
 
@@ -369,46 +337,18 @@ class MBotApp extends React.Component {
     // Don't process this laser scan if display is disabled.
     if (!this.state.laserDisplay) return;
 
-    let lidarLength = evt.ranges.length
-
-    let rays = [];
-    for(let i = 0; i < lidarLength; i++) {
-
-      // Lasers come in lidar frame (origin same as robot frame but + theta is CW)
-      // First tranform into robot frame
-      var theta = evt.thetas[i];
-      // Convert the ray into pixel coordinates.
-      let rayX = evt.ranges[i] * Math.cos(normalizeAngle(theta + this.state.theta)) * this.state.pixelsPerMeter;
-      let rayY = evt.ranges[i] * Math.sin(normalizeAngle(theta + this.state.theta)) * this.state.pixelsPerMeter;
-      // Shift by the current robot position.
-      rayX += this.state.x;
-      rayY += this.state.y;
-      rays.push([rayX, rayY]);
-    }
-
-    this.setState({drawLasers: rays, lidarLength: lidarLength})
+    this.scene.drawLasers(evt.ranges, evt.thetas);
   }
 
   handlePaths(evt) {
-    var updated_path = [];
-
-    for(let i = 0; i < evt.path.length; i++) {
-      updated_path[i] = this.posToPixels(evt.path[i][0], evt.path[i][1])
-    }
-
-    this.setState({displayPaths: updated_path})
+    this.scene.drawPath(evt.path);
   }
 
   handleParticles(evt){
     // Don't process particles if display is disabled.
     if (!this.state.particleDisplay) return;
 
-    var updated_pixels = [];
-    for (let i = 0; i < evt.num_particles; i++) {
-      updated_pixels[i] = this.posToPixels(evt.particles[i][0], evt.particles[i][1]);
-
-    }
-    this.setState({drawParticles: updated_pixels});
+    this.scene.drawParticles(evt.particles);
   }
 
   handleSLAMStatus(evt){
@@ -424,67 +364,48 @@ class MBotApp extends React.Component {
       }
 
       this.setState({slamMode: evt.slam_mode,
-                     localMapFileLocation: evt.map_path});
+                     mapfile: evt.map_path});
     }
   }
 
   handleObstacles(evt){
-    var updated_path = [];
-    for(let i = 0; i < evt.distances.length; i++)
-    {
-      updated_path[i] = this.cellToPixels(evt.pairs[i][0], evt.pairs[i][1])
-    }
-    this.setState({drawCostmap: updated_path});
+    // TODO: Add this functionality.
+    // var updated_path = [];
+    // for(let i = 0; i < evt.distances.length; i++)
+    // {
+    //   updated_path[i] = this.cellToPixels(evt.pairs[i][0], evt.pairs[i][1])
+    // }
+    // this.setState({drawCostmap: updated_path});
   }
 
   /**********************
    *   STATE SETTERS
    **********************/
 
-  setRobotPos(x, y, theta = 0) {
-    this.setState({x: x, y: y, theta: theta});
-  }
-
   updateMap(result) {
-    this.visitGrid.clear();
-
     // Check if the new cells are in byte form, and if so, convert them.
-    var new_cells;
+    let new_cells;
     if (result.cells instanceof ArrayBuffer) new_cells = new Int8Array(result.cells);
     else new_cells = result.cells;
 
-    var loaded = new_cells.length > 0;
+    let loaded = new_cells.length > 0;
+    let pixPerMeter = config.MAP_DISPLAY_WIDTH / (result.width * result.meters_per_cell);
 
     if (loaded) {
       // Update the map grid.
-      this.mapGrid.setSize(result.width, result.height);
-      this.mapGrid.updateCells(new_cells, this.mapCells, config.MAP_COLOUR_LOW, config.MAP_COLOUR_HIGH);
+      this.scene.setMapHeaderData(result.width, result.height, result.meters_per_cell, result.origin);
+      this.scene.updateCells(new_cells);
     }
 
-    this.mapCells = new_cells;
-
-    this.setState({width: result.width,
-                   height: result.height,
-                   origin: result.origin,
-                   metersPerCell: result.meters_per_cell,
-                   cellSize: config.MAP_DISPLAY_WIDTH / result.width,
-                   pixelsPerMeter: config.MAP_DISPLAY_WIDTH / (result.width * result.meters_per_cell),
-                   mapLoaded: loaded,
-                   path: [],
-                   goalCell: []});
+    if (loaded != this.state.mapLoaded) {
+      this.setState({ mapLoaded: loaded });
+    }
   }
 
   resetMapData() {
-    this.mapGrid.clear();
-    this.mapCells = [];
+    this.scene.clear();
 
     this.setState({
-      width: 0,
-      height: 0,
-      origin: [0, 0],
-      metersPerCell: 0,
-      pixelsPerMeter: 0,
-      cellSize: 0,
       mapLoaded: false,
       mapfile: null,
       goalCell: [],
@@ -504,14 +425,21 @@ class MBotApp extends React.Component {
   }
 
   changeRobot(){
+    this.scene.toggleRobotView();
     this.setState({robotDisplay: !this.state.robotDisplay})
   }
 
   changeLasers(){
+    // If we are currently drawing the lasers, clear them.
+    if (this.state.laserDisplay) this.scene.clearLasers();
+
     this.setState({laserDisplay: !this.state.laserDisplay})
   }
 
   changeParticles(){
+    // If we are currently drawing the lasers, clear them.
+    if (this.state.particleDisplay) this.scene.clearParticles();
+
     this.setState({particleDisplay: !this.state.particleDisplay})
   }
 
@@ -524,34 +452,9 @@ class MBotApp extends React.Component {
                    goalCell: []});
   }
 
-  setGoal(goal) {
-    if (goal.length === 0) return false;
-
-    var idx = goal[1] + goal[0] * this.state.width;
-    var valid = this.mapCells[idx] < 0;
-
-    this.setState({goalCell: goal, goalValid: valid});
-
-    return valid;
-  }
-
   /**********************
    *   OTHER FUNCTIONS
    **********************/
-
-  onPlan(row, col, plan) {
-    if (!this.setGoal([row, col])) return;
-    // Clear visted canvas
-    this.visitGrid.clear();
-    var start_cell = this.pixelsToCell(this.state.x, this.state.y);
-    var plan_data = {type: "plan",
-                    data: {
-                       goal: [row, col],
-                       plan: plan
-                     }
-                   };
-    this.ws.socket.emit("plan", {goal: [row, col], plan: plan})
-  }
 
   startRequestInterval() {
     if (this.requestInterval !== null)  return;
@@ -595,30 +498,6 @@ class MBotApp extends React.Component {
     });
   }
 
-  posToPixels(x, y) {
-    var u = (x - this.state.origin[0]) * this.state.pixelsPerMeter;
-    var v = (y - this.state.origin[1]) * this.state.pixelsPerMeter;
-    return [u, v];
-  }
-
-  pixelsToPos(u, v){
-    var x = (u/this.state.pixelsPerMeter)+this.state.origin[0];
-    var y = (v/this.state.pixelsPerMeter)+this.state.origin[1];
-    return [x, y]
-  }
-
-  cellToPixels(r, c) {
-    var u = (r * this.state.cellSize);
-    var v = (c * this.state.cellSize);
-    return [u, v];
-  }
-
-  pixelsToCell(u, v) {
-    var row = Math.floor(u / this.state.cellSize);
-    var col = Math.floor(v / this.state.cellSize);
-    return [row, col];
-  }
-
   render() {
     let sidebarClasses = "";
     if (!this.state.sideBarMode) {
@@ -628,115 +507,67 @@ class MBotApp extends React.Component {
     return (
       <div id="wrapper">
         <div id="main">
-
           <div id="canvas-container" ref={this.canvasWrapperRef}>
-            <TransformWrapper>
-              <TransformComponent>
-                <div id="canvas-wrapper">
-                  <canvas id="mapCanvas" ref={this.mapCanvas} width={config.MAP_DISPLAY_WIDTH} height={config.MAP_DISPLAY_HEIGHT}>
-                  </canvas>
-                  <canvas ref={this.visitCellsCanvas} width={config.MAP_DISPLAY_WIDTH} height={config.MAP_DISPLAY_HEIGHT}>
-                  </canvas>
-                  <DrawPaths xPos = {this.state.x} yPos = {this.state.y} path =  {this.state.displayPaths}/>
-                  {/* {this.state.costmapDisplay &&
-                    <DrawCostmap cells = {this.state.drawCostmap} state = {this.state.costmapDisplay}/>} */}
-                  {this.state.particleDisplay &&
-                    <DrawParticles particles = {this.state.drawParticles}/>}
-                  {this.state.laserDisplay &&
-                    <DrawLasers width={this.state.width} height={this.state.height}
-                                drawLasers={this.state.drawLasers} origin={[this.state.x, this.state.y]}/>}
-                  {this.state.robotDisplay &&
-                    <DrawRobot x={this.state.x} y={this.state.y} theta={this.state.theta}
-                               pixelsPerMeter={this.state.pixelsPerMeter} />}
-
-                  <DrawCells loaded={this.state.mapLoaded} path={this.state.path} clickedCell={this.state.clickedCell}
-                             goalCell={this.state.goalCell} goalValid={this.state.goalValid}
-                             cellSize={this.state.cellSize} />
-
-                  <canvas ref={this.clickCanvas} width={config.MAP_DISPLAY_WIDTH} height={config.MAP_DISPLAY_HEIGHT}
-                          onClick={(e) => this.handleMapClick(e)}
-                          onScroll={() => this.handleZoom()}>
-                  </canvas>
-                </div>
-              </TransformComponent>
-            </TransformWrapper>
-
           </div>
         </div>
 
         <div id="sidenav" className={sidebarClasses}>
           <div id="toggle-nav" onClick={() => this.onSideBar()}><FontAwesomeIcon icon={faBars} /></div>
           <div className="inner">
-          <div className="title">
-            {this.state.robotName}
-          </div>
+            <div className="title">
+              {this.state.robotName}
+            </div>
+
             <div className="status-wrapper">
               <ConnectionStatus status={this.state.connection}/>
-              <StatusMessage robotCell={this.pixelsToCell(this.state.x, this.state.y)}
-                             robotPose={[this.state.poseX, this.state.poseY, this.state.poseTheta]}
-                             posClickedCell={this.state.posClickedCell} clickedCell={this.state.clickedCell} />
+              <StatusMessage robotCell={this.state.robotCell}
+                              robotPose={this.state.robotPose}
+                              posClickedCell={this.state.posClickedCell} clickedCell={this.state.clickedCell} />
             </div>
 
             <div className="row">
-              <div className="">
-
-                <ToggleSelect label={"Localization Mode"} explain={"Toggles localization mode and displays map."}
-                              checked={this.state.slamMode !== config.slam_mode.IDLE}
-                              onChange={ () => this.onLocalizationMode() }/>
-                  {this.state.slamMode !== config.slam_mode.IDLE &&
-                    <div className="subpanel">
-                      <ToggleSelect label={"Mapping Mode"} checked={this.state.slamMode === config.slam_mode.FULL_SLAM}
-                                    explain={"Toggles mapping mode on the robot."}
-                                    onChange={ () => this.onMappingMode() } small={true} />
-                      <div className="button-wrapper-col">
-                        <button className={"button" + (this.state.slamMode !== config.slam_mode.FULL_SLAM ? " inactive" : "")}
-                                onClick={() => this.onResetMap()}>Reset Map</button>
-                        <button className="button" onClick={() => this.saveMap()}>Download Map</button>
-                      </div>
+              <ToggleSelect label={"Localization Mode"} explain={"Toggles localization mode and displays map."}
+                            checked={this.state.slamMode !== config.slam_mode.IDLE}
+                            onChange={ () => this.onLocalizationMode() }/>
+                {this.state.slamMode !== config.slam_mode.IDLE &&
+                  <div className="subpanel">
+                    <ToggleSelect label={"Mapping Mode"} checked={this.state.slamMode === config.slam_mode.FULL_SLAM}
+                                  explain={"Toggles mapping mode on the robot."}
+                                  onChange={ () => this.onMappingMode() } small={true} />
+                    <div className="button-wrapper-col">
+                      <button className={"button" + (this.state.slamMode !== config.slam_mode.FULL_SLAM ? " inactive" : "")}
+                              onClick={() => this.onResetMap()}>Reset Map</button>
+                      <button className="button" onClick={() => this.saveMap()}>Download Map</button>
                     </div>
-                  }
-
-                  {/* TODO: Implement intial pose branch into code*/}
-                  {/* {<button className="button start-color2" onClick={() => this.onSetPose()}>Set Inital Pose</button>} */}
-
-                {/* {<label htmlFor="file-upload" className="button upload-color mb-3">
-                    Upload a Map
-                  </label>
-                  <input id="file-upload" type="file" onChange = {(event) => this.onFileChange(event)}/>} */}
-                { /* Checkboxes for map visualization. */}
-                <div className="box">
-                  <ToggleSelect label={"Draw Particles"} checked={this.state.particleDisplay}
-                                explain={"Shows all the positions the robot thinks it might be at."}
-                                onChange={ () => this.changeParticles() }/>
-                </div>
-                <div className="box">
-                <ToggleSelect label={"Draw Robot"} checked={this.state.robotDisplay}
-                                explain={"Displays the robot on the map."}
-                                onChange={ () => this.changeRobot() }/>
-                </div>
-
-                {/* // Remove temporarily since backend doesn't publish this. */}
-                {/* <ToggleSelect label={"Draw Costmap"} checked={this.state.costmapDisplay}
-                                 onChange={ () => this.changeCostMap() }/> */}
-                <ToggleSelect label={"Draw Lasers"} checked={this.state.laserDisplay}
-                              explain={"Displays the Lidar rays."}
-                              onChange={ () => this.changeLasers() }/>
-
-                { /* Drive mode and control panel. */}
-                <ToggleSelect label={"Drive Mode"} checked={this.state.drivingMode}
-                              explain={"To drive the robot with your keyboard, use A,D for left & right, " +
-                                       "W,S for forward & backward, and Q,E to rotate. " +
-                                       "Alternatively, you can click and drag the joystick and " +
-                                       "press the turn buttons to move the robot"}
-                              onChange={ () => this.onDrivingMode() }/>
-                {this.state.drivingMode &&
-                  <DriveControlPanel ws={this.ws} drivingMode={this.state.drivingMode} />
+                  </div>
                 }
+
+              { /* Checkboxes for map visualization. */}
+              <ToggleSelect label={"Draw Robot"} checked={this.state.robotDisplay}
+                              explain={"Displays the robot on the map."}
+                              onChange={ () => this.changeRobot() }/>
+
+              <ToggleSelect label={"Draw Particles"} checked={this.state.particleDisplay}
+                            explain={"Shows all the positions the robot thinks it might be at."}
+                            onChange={ () => this.changeParticles() }/>
+
+              <ToggleSelect label={"Draw Lasers"} checked={this.state.laserDisplay}
+                            explain={"Displays the Lidar rays."}
+                            onChange={ () => this.changeLasers() }/>
+
+              { /* Drive mode and control panel. */}
+              <ToggleSelect label={"Drive Mode"} checked={this.state.drivingMode}
+                            explain={"To drive the robot with your keyboard, use A,D for left & right, " +
+                                      "W,S for forward & backward, and Q,E to rotate. " +
+                                      "Or, use the joystick and turn buttons in the drive panel."}
+                            onChange={ () => this.onDrivingMode() }/>
+              {this.state.drivingMode &&
+                <DriveControlPanel ws={this.ws} drivingMode={this.state.drivingMode} />
+              }
             </div>
           </div>
         </div>
       </div>
-    </div>
     );
   }
 }
