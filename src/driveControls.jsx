@@ -88,12 +88,12 @@ class DriveControlPanel extends React.Component {
     if(this.props.drivingMode){
       if(this.controlMap[evt.key]){
         this.controlMap[evt.key].pressed = false
-        if(this.controlMap[evt.key].fn == "back") this.x++;
-        if(this.controlMap[evt.key].fn == "forward") this.x--;
-        if(this.controlMap[evt.key].fn == "right") this.y++;
-        if(this.controlMap[evt.key].fn == "left") this.y--;
-        if(this.controlMap[evt.key].fn == "tright") this.t++;
-        if(this.controlMap[evt.key].fn == "tleft") this.t--;
+        if(this.controlMap[evt.key].fn == "back" && this.x < 1) this.x++;
+        if(this.controlMap[evt.key].fn == "forward" && this.x > -1) this.x--;
+        if(this.controlMap[evt.key].fn == "right" && this.y < 1) this.y++;
+        if(this.controlMap[evt.key].fn == "left" && this.y > -1) this.y--;
+        if(this.controlMap[evt.key].fn == "tright" && this.t < 1) this.t++;
+        if(this.controlMap[evt.key].fn == "tleft" && this.t > -1) this.t--;
       }
 
       // Stops robot if it finds that all keys have been lifted up, acts as a failsafe to above logic
