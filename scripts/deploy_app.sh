@@ -29,6 +29,13 @@ echo "Setting up Python server..."
 echo "#############################"
 echo
 
+ENVS_ROOT="/home/$USER/.envs"
+MBOT_APP_ENV="$ENVS_ROOT/mbot-app-env/"  # Virtual env where app is run.
+
+# Get the global Python library install path and add it to the path.
+PY_LIB_PATH=$(python3 -c "import site; print(site.getsitepackages()[0])")
+PY_LIB_PATH=$PY_LIB_PATH:/usr/lib/python3/dist-packages/
+
 if [ ! -d "/data/www/mbot/api" ]; then
     sudo mkdir /data/www/mbot/api
 fi
@@ -40,6 +47,9 @@ sudo cp -r app/ /data/www/mbot/api
 if [ ! -f "/etc/systemd/system/mbot-web-server.service" ]; then
   # This is the first time installing.
   sudo cp config/mbot-web-server.service /etc/systemd/system/
+  # Fill in the path to this env and the correct Python path.
+  sudo sed -i "s#WEBAPP_ENV_PATH#$MBOT_APP_ENV#" /etc/systemd/system/mbot-web-server.service
+  sudo sed -i "s#PY_LIB_PATH#$PY_LIB_PATH#" /etc/systemd/system/mbot-web-server.service
 
   echo "Enabling MBot Web App service."
   # Reload the service.
@@ -49,6 +59,9 @@ if [ ! -f "/etc/systemd/system/mbot-web-server.service" ]; then
 else
   # This service has already been installed. Pull new changes then restart it.
   sudo cp config/mbot-web-server.service /etc/systemd/system/
+  # Fill in the path to this env.
+  sudo sed -i "s#WEBAPP_ENV_PATH#$MBOT_APP_ENV#" /etc/systemd/system/mbot-web-server.service
+  sudo sed -i "s#PY_LIB_PATH#$PY_LIB_PATH#" /etc/systemd/system/mbot-web-server.service
 
   echo "MBot Web App service is already enabled. Restarting it."
   sudo systemctl daemon-reload

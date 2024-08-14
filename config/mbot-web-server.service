@@ -7,7 +7,8 @@ StartLimitIntervalSec=0
 Type=simple
 Restart=always
 RestartSec=1
-ExecStart=python3 /data/www/mbot/api/mbot_omni_app.py
+Environment="PYTHONPATH=$PYTHONPATH:PY_LIB_PATH"
+ExecStart=WEBAPP_ENV_PATH/bin/python3 /data/www/mbot/api/mbot_omni_app.py
 User=root
 
 [Install]
