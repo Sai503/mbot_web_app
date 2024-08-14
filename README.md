@@ -1,6 +1,6 @@
-# MBot Omni App
+# MBot Web App
 
-Web app for the MBot Omni robot.
+Web app for the MBot robot.
 
 ## Installing from the Latest Release (Recommended)
 
