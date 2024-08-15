@@ -8,18 +8,14 @@ echo "###################################"
 ENVS_ROOT="/home/$USER/.envs"
 MBOT_APP_ENV="$ENVS_ROOT/mbot-app-env/"
 
-# Get the global Python library install path and add it to the path.
-PY_LIB_PATH=$(python3 -c "import site; print(site.getsitepackages()[0])")
-PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:$PY_LIB_PATH
-
-# Create a new env if applicable
+# Create env environment if applicable
 if [ ! -d $ENVS_ROOT ]; then
     mkdir $ENVS_ROOT
 fi
 
-# Create a new env if applicable
+# Create a new env if applicable, and share the site packages.
 if [ ! -d $MBOT_APP_ENV ]; then
-    python3 -m venv $MBOT_APP_ENV
+    python3 -m venv --system-site-packages $MBOT_APP_ENV
 fi
 
 # Ensure numpy is globally installed, since on the Raspberry Pi the pip wheel doesn't work.
