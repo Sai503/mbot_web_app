@@ -115,6 +115,30 @@ class ToggleSelect extends React.Component {
 }
 }
 
+
+function SLAMControlPanel(props) {
+  return (
+    <>
+      <ToggleSelect label={"Localization Mode"} explain={"Toggles localization mode and displays map."}
+                           checked={props.slamMode !== config.slam_mode.IDLE}
+                           onChange={ () => props.onLocalizationMode() }/>
+      {props.slamMode !== config.slam_mode.IDLE &&
+        <div className="subpanel">
+          <ToggleSelect label={"Mapping Mode"} checked={props.slamMode === config.slam_mode.FULL_SLAM}
+                        explain={"Toggles mapping mode on the robot."}
+                        onChange={ () => props.onMappingMode() } small={true} />
+          <div className="button-wrapper-col">
+            <button className={"button" + (props.slamMode !== config.slam_mode.FULL_SLAM ? " inactive" : "")}
+                    onClick={() => props.onResetMap()}>Reset Map</button>
+            <button className="button" onClick={() => props.saveMap()}>Download Map</button>
+          </div>
+        </div>
+      }
+    </>
+  );
+}
+
+
 /*******************
  *   WHOLE PAGE
  *******************/
@@ -133,7 +157,7 @@ class MBotApp extends React.Component {
       goalCell: [],
       goalValid: true,
       // Mode variables.
-      slamMode: config.slam_mode.IDLE,
+      slamMode: config.slam_mode.INVALID,
       drivingMode: false,
       sideBarMode: true,
       omni: false,
@@ -526,21 +550,14 @@ class MBotApp extends React.Component {
             </div>
 
             <div className="row">
-              <ToggleSelect label={"Localization Mode"} explain={"Toggles localization mode and displays map."}
-                            checked={this.state.slamMode !== config.slam_mode.IDLE}
-                            onChange={ () => this.onLocalizationMode() }/>
-                {this.state.slamMode !== config.slam_mode.IDLE &&
-                  <div className="subpanel">
-                    <ToggleSelect label={"Mapping Mode"} checked={this.state.slamMode === config.slam_mode.FULL_SLAM}
-                                  explain={"Toggles mapping mode on the robot."}
-                                  onChange={ () => this.onMappingMode() } small={true} />
-                    <div className="button-wrapper-col">
-                      <button className={"button" + (this.state.slamMode !== config.slam_mode.FULL_SLAM ? " inactive" : "")}
-                              onClick={() => this.onResetMap()}>Reset Map</button>
-                      <button className="button" onClick={() => this.saveMap()}>Download Map</button>
-                    </div>
-                  </div>
-                }
+              {/* Only show the SLAM control panel if we have received a SLAM status message. */}
+              {this.state.slamMode != config.slam_mode.INVALID &&
+                <SLAMControlPanel slamMode={this.state.slamMode}
+                                  onLocalizationMode={() => this.onLocalizationMode()}
+                                  onMappingMode={() => this.onMappingMode()}
+                                  onResetMap={() => this.onResetMap()}
+                                  saveMap={() => this.saveMap()} />
+              }
 
               { /* Checkboxes for map visualization. */}
               <ToggleSelect label={"Draw Robot"} checked={this.state.robotDisplay}
