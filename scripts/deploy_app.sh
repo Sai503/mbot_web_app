@@ -29,7 +29,8 @@ echo "Setting up Python server..."
 echo "#############################"
 echo
 
-MBOT_APP_ENV="/home/$USER/envs/mbot-app-env/"  # Virtual env where app is run.
+ENVS_ROOT="/home/$USER/.envs"
+MBOT_APP_ENV="$ENVS_ROOT/mbot-app-env/"  # Virtual env where app is run.
 
 if [ ! -d "/data/www/mbot/api" ]; then
     sudo mkdir /data/www/mbot/api
@@ -42,7 +43,7 @@ sudo cp -r app/ /data/www/mbot/api
 if [ ! -f "/etc/systemd/system/mbot-web-server.service" ]; then
   # This is the first time installing.
   sudo cp config/mbot-web-server.service /etc/systemd/system/
-  # Fill in the path to this env.
+  # Fill in the path to this env and the correct Python path.
   sudo sed -i "s#WEBAPP_ENV_PATH#$MBOT_APP_ENV#" /etc/systemd/system/mbot-web-server.service
 
   echo "Enabling MBot Web App service."

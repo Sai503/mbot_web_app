@@ -1,8 +1,33 @@
-# MBot Omni App
+# MBot Web App
 
-Web app for the MBot Omni robot.
+Web app for the MBot robot.
 
-## Dependencies
+## Installing from the Latest Release (Recommended)
+
+To install the MBot web app, get the latest release from the [releases page](https://github.com/mbot-project/mbot_web_app/releases). Then, on a terminal in your MBot, install as follows:
+```bash
+# Note: Replace $VERSION with your desired version
+# OR do "export VERSION=vX.Y.Z", substituting the latest version number.
+wget https://github.com/mbot-project/mbot_web_app/releases/download/$VERSION/mbot_web_app-$VERSION.tar.gz
+tar -xvzf mbot_web_app-$VERSION.tar.gz
+```
+Install the dependencies:
+```bash
+cd mbot_web_app-$VERSION/
+./install_nginx.sh
+./install_python_deps.sh
+```
+Then deploy the app:
+```bash
+./deploy_app.sh --no-rebuild
+```
+You can now safely delete the files you downloaded and extracted.
+
+## Installing from Source
+
+To build from source, or to develop locally, follow these steps.
+
+### Dependencies
 
 The front end relies on NodeJS (to compile and run the JavaScript files), NPM (a
 package manager for NodeJS applications) and React, as well as some other
@@ -16,9 +41,9 @@ nvm install 18
 ```
 Now you should have the `node` and `npm` command installed. You can check with `node --version` and `npm --version`.
 
-## Setup on a Robot
+### Installing from Source on a Robot
 
-To set up the webapp on a new robot, use the helper scripts. First, install nginx and the Python dependencies:
+To set up the webapp on a new robot from source, use the helper scripts. First, install nginx and the Python dependencies:
 ```bash
 ./scripts/install_nginx.sh
 ./scripts/install_python_deps.sh
@@ -31,9 +56,9 @@ The webapp is accessible by typing the robot's IP into the browser.
 
 Once you have done the setup once, you only need to rerun the `deploy_app.sh` script in order to update the webapp code with a new version.
 
-## Local Execution
+## Development Mode
 
-If you are developing this app and want to run it locally, follow these instructions.
+If you are developing this app and want to run it locally, follow these instructions. You will need to run both the front end and the back end.
 
 ### Front end
 
@@ -60,7 +85,7 @@ webapp.
 
 ### Back end
 
-The backend is build using Flask and Python 3. If
+The backend is built using Flask and Python 3. If
 working on a Linux computer, you probably want to run the code in a virtual
 environment (on the Raspberry Pi, you can install things directly if you want).
 To make a virtual environment and then activate it, do:
@@ -96,3 +121,8 @@ npm run start-api
 
 Traffic on `http://[SERVER_IP]:8000` will be forwarded to `http://[SERVER_IP]:5000`,
 where the Flask server is running.
+
+**Note:** If you have the webapp installed already, you will need to stop the backend service to run it locally so that the two don't conflict. To stop the installed server, do:
+```bash
+sudo systemctl stop mbot-web-server.service
+```
