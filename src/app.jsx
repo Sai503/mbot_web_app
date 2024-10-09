@@ -273,36 +273,41 @@ export default function MBotApp({ mbot }) {
     }
   }
 
-  // This lets the React App start and cleanup the timer properly.
+  // A heartbeat effect that checks if the MBot Bridge backend is connected.
   useEffect(() => {
-    console.log("Main App Effect");
     let timerId = null;
 
-    // Read the hostname.
-    mbot.readHostname().then((name) => {
-      setHostname(name);
-      if (!connected) setConnected(true);
-      // TODO: also keep track of whether we are disconnected.
-    }).catch((err) => {
-      setConnected(false);
-      // Check for connection every 3 seconds.
-      timerId = setInterval(() => {
-        mbot.readHostname().then((name) => {
-          setHostname(name);
-          setConnected(true);
-          clearInterval(timerId);
-        }).catch((err) => {
-          console.warn("Not connected...", err);
-        });
-      }, 3000);
-    });
+    function checkConnection() {
+      mbot.readHostname().then((name) => {
+        if (!connected) setConnected(true);
+      }).catch((err) => {
+        if (connected) setConnected(false);
+      });
+    }
+
+    // Check if connected once right away.
+    checkConnection();
+
+    // Check for connection intermittently.
+    timerId = setInterval(() => { checkConnection(); }, config.CONNECT_PERIOD);
 
     // Return the cleanup function which stops the rerender.
     return () => {
-      console.log("CLEANUP");
       if (timerId) clearInterval(timerId);
     };
-  }, []);
+  }, [connected, setConnected]);
+
+  // Effect to request the MBot hostname on first mounting component.
+  useEffect(() => {
+    // Read the hostname.
+    if (connected) {
+      mbot.readHostname().then((name) => {
+        setHostname(name);
+      }).catch((err) => {
+        console.warn("Could not get hostname:", err);
+      });
+    }
+  }, [connected, setHostname]);
 
   return (
     <div id="wrapper">
