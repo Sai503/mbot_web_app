@@ -198,14 +198,17 @@ class MBotScene {
 
     this.robotState = {x: 0, y: 0, theta: 0};
     // Map data.
-    this.origin = [0, 0];
-    this.metersPerCell = 0.05;
+    const DEFAULT_WIDTH = 100;  // Default number of cells if no map is provided.
+    this.metersPerCell = 0.05;  // Default meters per cell.
+    const origin = -this.metersPerCell * DEFAULT_WIDTH / 2;  // By default, origin is in the center.
+    this.origin = [origin, origin];
     this.pixWidth = config.CANVAS_DISPLAY_WIDTH;
     this.pixHeight = config.CANVAS_DISPLAY_HEIGHT;
-    this.pixPerCell = 5;
+    this.pixPerCell = this.pixWidth / DEFAULT_WIDTH;
     this.pixelsPerMeter = this.pixPerCell / this.metersPerCell;
 
     this.occupancyGrid = new OccupancyGrid([this.pixWidth, this.pixHeight]);
+    this.occupancyGrid.setMapData(DEFAULT_WIDTH, DEFAULT_WIDTH, this.metersPerCell, this.origin);
 
     this.dragStart = null;
     this.clickStart = null;
@@ -213,12 +216,10 @@ class MBotScene {
 
     this.stopped = false;
     this.loaded = false;
-    this.loading = false;
   }
 
   async init() {
     return new Promise(async (resolve, reject) => {
-      // this.loaded = false;
 
       if (this.stopped) {
         this.loaded = false;
@@ -227,7 +228,6 @@ class MBotScene {
       }
 
       if (this.loaded || this.app) {
-        console.log("**Already loaded")
         reject("App is already initialized or initialization was already called.");
       }
 
@@ -486,8 +486,8 @@ class MBotScene {
     this.robotState.theta = theta;
   }
 
-  toggleRobotView() {
-    this.robot.visible = !this.robot.visible;
+  toggleRobotView(visible) {
+    this.robot.visible = visible;
   }
 
   updateCells(cells) {

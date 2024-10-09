@@ -145,22 +145,23 @@ function SLAMControlPanel({ slamMode, onLocalizationMode, onMappingMode, onReset
   );
 }
 
-function MBotSceneWrapper({ mbot, connected, laserDisplay, particleDisplay,
+function MBotSceneWrapper({ mbot, connected, robotDisplay, laserDisplay, particleDisplay,
                             setClickedCell, setRobotPose, setRobotCell}) {
   // Ref for the canvas.
   const canvasWrapperRef = useRef(null);
-  const scene = new MBotScene();
+  const scene = useRef(new MBotScene());
 
   // Click callback when the user clicks on the scene.
   const handleCanvasClick = useCallback((pos) => {
-    if (!scene.loaded) return;
-    if (pos.length === 0 || scene.isMapLoaded()) {
+    if (!scene.current.loaded) return;
+    if (pos.length === 0 || scene.current.isMapLoaded()) {
       // If the map is not loaded or an empty cell is passed, clear.
       setClickedCell([]);
       return;
     }
 
-    const clickedCell = [...scene.pixelsToCell(pos[0], pos[1]), ...scene.pixelsToPos(pos[0], pos[1])];
+    const clickedCell = [...scene.current.pixelsToCell(pos[0], pos[1]),
+                         ...scene.current.pixelsToPos(pos[0], pos[1])];
     setClickedCell(clickedCell);
   }, [setClickedCell]);
 
@@ -168,54 +169,50 @@ function MBotSceneWrapper({ mbot, connected, laserDisplay, particleDisplay,
     const runID = Math.floor(Math.random() * 10000);
     console.log("MBot Scene Init Effect", runID);
 
-    scene.init().then(() => {
-      console.log("Init scene complete", runID)
-      scene.createScene(canvasWrapperRef.current);
-      scene.clickCallback = handleCanvasClick;
+    scene.current.init().then(() => {
+      console.log("Init scene complete", runID, scene.current.loaded)
+      scene.current.createScene(canvasWrapperRef.current);
+      scene.current.clickCallback = handleCanvasClick;
     }).catch((error) => {
-      console.error('Init error', error, runID);
+      console.warn(error, runID);
     });
 
     // Return the cleanup function which stops the rerender.
     return () => {
       console.log("CLEANUP INIT SCENE", runID);
-      // scene.destroy();
+      // scene.current.destroy();
     }
   }, [canvasWrapperRef, handleCanvasClick]);
 
+  // Effect to manage subscribing to the pose.
   useEffect(() => {
     const runID = Math.floor(Math.random() * 10000);
-    console.log("MBot Scene Effect", runID);
+    const pose_ch = "MBOT_ODOMETRY";
+    console.log("MBot Pose Effect", runID, scene.current.loaded);
 
-    // Handlers for data.
-    function handlePose(data){
-      // Sets the robot position
-      scene.updateRobot(data.x, data.y, data.theta);
-      setRobotPose({x: data.x, y: data.y, theta: data.theta});
-      if (scene.isMapLoaded()) {
-        const robotCell = scene.posToCell(data.x, data.y);
-        setRobotCell(robotCell);
-      }
+    if (scene.current.loaded) scene.current.toggleRobotView(robotDisplay);
+
+    if (robotDisplay) {
+      mbot.subscribe(pose_ch, (msg) => {
+        // Sets the robot position
+        setRobotPose({x: msg.data.x, y: msg.data.y, theta: msg.data.theta});
+        if (!scene.current.loaded) return;
+        scene.current.updateRobot(msg.data.x, msg.data.y, msg.data.theta);
+        if (scene.current.isMapLoaded()) {
+          const robotCell = scene.current.posToCell(msg.data.x, msg.data.y);
+          setRobotCell(robotCell);
+        }
+      }).catch((error) => {
+        console.error('Subscription failed for channel', pose_ch, error);
+      });
     }
-
-    // function handlePaths(data) {
-    //   scene.drawPath(data.path);
-    // }
-
-    // function handleParticles(data){
-    //   // Don't process particles if display is disabled.
-    //   if (!particleDisplay) return;
-
-    //   scene.drawParticles(data.particles);
-    // }
 
     // Return the cleanup function which stops the rerender.
     return () => {
-      console.log("CLEANUP SCENE", runID);
-      // mbot.unsubscribe("LIDAR").catch((err) => console.warn(err));
-      // mbot.unsubscribe("MBOT_ODOMETRY").catch((err) => console.warn(err));
+      console.log("CLEANUP POSE", runID);
+      mbot.unsubscribe(pose_ch).catch((err) => console.warn(err));
     }
-  }, [connected, setClickedCell, laserDisplay]);
+  }, [robotDisplay, setRobotPose, setRobotCell]);
 
   return (
     <div id="canvas-container" ref={canvasWrapperRef}>
@@ -293,6 +290,7 @@ export default function MBotApp({ mbot }) {
     <div id="wrapper">
       <div id="main">
         <MBotSceneWrapper mbot={mbot} connected={connected}
+                          robotDisplay={robotDisplay}
                           laserDisplay={laserDisplay}
                           particleDisplay={particleDisplay}
                           setClickedCell={setClickedCell}
