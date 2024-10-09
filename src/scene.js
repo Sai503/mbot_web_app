@@ -210,14 +210,60 @@ class MBotScene {
     this.dragStart = null;
     this.clickStart = null;
     this.clickCallback = (pos) => {};
+
+    this.stopped = false;
+    this.loaded = false;
+    this.loading = false;
   }
 
   async init() {
-    this.app = new Application();
-    await this.app.init({resizeTo: window, backgroundColor: 0xc9d1d9 });
+    return new Promise(async (resolve, reject) => {
+      // this.loaded = false;
 
-    const imgUrl = new URL('./images/mbot.png', import.meta.url).href;
-    this.robotImage = await Assets.load(imgUrl);
+      if (this.stopped) {
+        this.loaded = false;
+        reject(new Error("Initialization aborted because destroy was called."));
+        return;
+      }
+
+      if (this.loaded || this.app) {
+        console.log("**Already loaded")
+        reject("App is already initialized or initialization was already called.");
+      }
+
+      this.app = new Application();
+
+      try {
+        await this.app.init({resizeTo: window, backgroundColor: 0xc9d1d9 });
+
+        const imgUrl = new URL('./images/mbot.png', import.meta.url).href;
+        this.robotImage = await Assets.load(imgUrl);
+
+        // Check one last time before considering initialization complete
+        if (this.stopped) {
+          this.app.destroy(true, true); //
+          console.log("destroy init")
+          this.loaded = false;
+          reject("Initialization aborted because destroy was called.");
+        } else {
+          this.loaded = true;
+          resolve();
+        }
+      } catch (error) {
+        this.loaded = false;
+        reject(error); // Ensure any errors are caught and the promise is rejected
+      }
+    });
+  }
+
+  destroy() {
+    console.log("destroy")
+    if (this.app && this.loaded) {
+      this.app.destroy({removeView: true});
+      this.loaded = false;
+      console.log("destroy method")
+    }
+    this.stopped = true;
   }
 
   createScene(ele) {
@@ -259,6 +305,7 @@ class MBotScene {
     this.robot.y = 0;
     this.robot.width = config.ROBOT_SIZE * this.pixelsPerMeter;
     this.robot.height = config.ROBOT_SIZE * this.pixelsPerMeter;
+    console.log("robot", this.robot.width, this.robot.height, this.robotContainer.x, this.robotContainer.y)
     this.robotContainer.addChild(this.robot);
 
     this.sceneContainer.addChild(this.robotContainer);
@@ -388,6 +435,10 @@ class MBotScene {
 
   getMapData() {
     return this.occupancyGrid.getMapData();
+  }
+
+  isMapLoaded() {
+    return this.occupancyGrid.mapCells.length > 0;
   }
 
   posToPixels(x, y) {
