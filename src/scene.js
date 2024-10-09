@@ -514,7 +514,7 @@ class MBotScene {
   }
 
   clearLasers() {
-    this.laserGraphics.clear();
+    if (this.laserGraphics) this.laserGraphics.clear();
   }
 
   drawPath(path, color = "rgb(255, 25, 25)", line_width = 0.5) {

@@ -150,6 +150,9 @@ function MBotSceneWrapper({ mbot, connected, robotDisplay, laserDisplay, particl
   // Ref for the canvas.
   const canvasWrapperRef = useRef(null);
   const scene = useRef(new MBotScene());
+  // Channel data.
+  const POSE_CHANNEL = "MBOT_ODOMETRY";
+  const LIDAR_CHANNEL = "LIDAR";
 
   // Click callback when the user clicks on the scene.
   const handleCanvasClick = useCallback((pos) => {
@@ -186,14 +189,10 @@ function MBotSceneWrapper({ mbot, connected, robotDisplay, laserDisplay, particl
 
   // Effect to manage subscribing to the pose.
   useEffect(() => {
-    const runID = Math.floor(Math.random() * 10000);
-    const pose_ch = "MBOT_ODOMETRY";
-    console.log("MBot Pose Effect", runID, scene.current.loaded);
-
     if (scene.current.loaded) scene.current.toggleRobotView(robotDisplay);
 
     if (robotDisplay) {
-      mbot.subscribe(pose_ch, (msg) => {
+      mbot.subscribe(POSE_CHANNEL, (msg) => {
         // Sets the robot position
         setRobotPose({x: msg.data.x, y: msg.data.y, theta: msg.data.theta});
         if (!scene.current.loaded) return;
@@ -203,16 +202,35 @@ function MBotSceneWrapper({ mbot, connected, robotDisplay, laserDisplay, particl
           setRobotCell(robotCell);
         }
       }).catch((error) => {
-        console.error('Subscription failed for channel', pose_ch, error);
+        console.error('Subscription failed for channel', POSE_CHANNEL, error);
       });
     }
 
     // Return the cleanup function which stops the rerender.
     return () => {
-      console.log("CLEANUP POSE", runID);
-      mbot.unsubscribe(pose_ch).catch((err) => console.warn(err));
+      mbot.unsubscribe(POSE_CHANNEL).catch((err) => console.warn(err));
     }
   }, [robotDisplay, setRobotPose, setRobotCell]);
+
+  // Effect to manage subscribing to the Lidar.
+  useEffect(() => {
+    if (laserDisplay) {
+      mbot.subscribe(LIDAR_CHANNEL, (msg) => {
+        if (!scene.current.loaded) return;
+        scene.current.drawLasers(msg.data.ranges, msg.data.thetas);
+      }).catch((error) => {
+        console.error('Subscription failed for channel', LIDAR_CHANNEL, error);
+      });
+    }
+    else {
+      scene.current.clearLasers();
+    }
+
+    // Return the cleanup function which stops the rerender.
+    return () => {
+      mbot.unsubscribe(LIDAR_CHANNEL).catch((err) => console.warn(err));
+    }
+  }, [laserDisplay]);
 
   return (
     <div id="canvas-container" ref={canvasWrapperRef}>
