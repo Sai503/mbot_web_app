@@ -146,6 +146,7 @@ function SLAMControlPanel({ slamMode, onLocalizationMode, onMappingMode, onReset
 }
 
 function MBotSceneWrapper({ mbot, connected, robotDisplay, laserDisplay, particleDisplay,
+                            slamMode, setSlamMode,
                             setClickedCell, setRobotPose, setRobotCell}) {
   // Ref for the canvas.
   const canvasWrapperRef = useRef(null);
@@ -153,6 +154,8 @@ function MBotSceneWrapper({ mbot, connected, robotDisplay, laserDisplay, particl
   // Channel data.
   const POSE_CHANNEL = "MBOT_ODOMETRY";
   const LIDAR_CHANNEL = "LIDAR";
+  const SLAM_MODE_CHANNEL = "SLAM_STATUS";
+  // TODO: Path, particles
 
   // Click callback when the user clicks on the scene.
   const handleCanvasClick = useCallback((pos) => {
@@ -168,6 +171,7 @@ function MBotSceneWrapper({ mbot, connected, robotDisplay, laserDisplay, particl
     setClickedCell(clickedCell);
   }, [setClickedCell]);
 
+  // Initialization of the scene.
   useEffect(() => {
     const runID = Math.floor(Math.random() * 10000);
     console.log("MBot Scene Init Effect", runID);
@@ -232,6 +236,34 @@ function MBotSceneWrapper({ mbot, connected, robotDisplay, laserDisplay, particl
     }
   }, [laserDisplay]);
 
+  // Effect to manage SLAM mode.
+  useEffect(() => {
+    mbot.subscribe(SLAM_MODE_CHANNEL, (msg) => {
+      if (!scene.current.loaded) return;
+      const data = msg.data;
+      // Only update if the mode has changed.
+      if (data.slam_mode !== slamMode) {
+        if (data.slam_mode !== config.slam_mode.FULL_SLAM) {
+          // If we are not in mapping mode, stop asking for map.
+          // this.stopRequestInterval();
+        }
+        else {
+          // If we are in mapping mode, start asking for map.
+          // this.startRequestInterval();
+        }
+
+        setSlamMode(data.slam_mode);
+      }
+    }).then().catch((error) => {
+      console.error('Subscription failed for channel', SLAM_MODE_CHANNEL, error);
+    });
+
+    // Return the cleanup function which stops the subscription.
+    return () => {
+      mbot.unsubscribe(SLAM_MODE_CHANNEL).catch((err) => console.warn(err));
+    }
+  }, [slamMode, setSlamMode]);
+
   return (
     <div id="canvas-container" ref={canvasWrapperRef}>
     </div>
@@ -254,24 +286,6 @@ export default function MBotApp({ mbot }) {
   const [clickedCell, setClickedCell] = useState([]);
   // Mapping parameters.
   const [slamMode, setSlamMode] = useState(config.slam_mode.INVALID);
-
-  function handleSLAMStatus(data){
-    // Only update if the mode has changed.
-    if (data.slam_mode !== slamMode) {
-      if (data.slam_mode !== config.slam_mode.FULL_SLAM) {
-        // If we are not in mapping mode, stop asking for map.
-        // this.stopRequestInterval();
-      }
-      else {
-        // If we are in mapping mode, start asking for map.
-        // this.startRequestInterval();
-      }
-
-      setSlamMode(data.slam_mode);
-      // this.setState({slamMode: evt.slam_mode,
-      //                mapfile: evt.map_path});
-    }
-  }
 
   // A heartbeat effect that checks if the MBot Bridge backend is connected.
   useEffect(() => {
@@ -316,6 +330,8 @@ export default function MBotApp({ mbot }) {
                           robotDisplay={robotDisplay}
                           laserDisplay={laserDisplay}
                           particleDisplay={particleDisplay}
+                          slamMode={slamMode}
+                          setSlamMode={setSlamMode}
                           setClickedCell={setClickedCell}
                           setRobotPose={setRobotPose}
                           setRobotCell={setRobotCell} />
