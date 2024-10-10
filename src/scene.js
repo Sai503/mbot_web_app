@@ -232,6 +232,7 @@ class MBotScene {
       }
 
       this.app = new Application();
+      this.loaded = false;
 
       try {
         await this.app.init({resizeTo: window, backgroundColor: 0xc9d1d9 });
@@ -241,27 +242,21 @@ class MBotScene {
 
         // Check one last time before considering initialization complete
         if (this.stopped) {
-          this.app.destroy(true, true); //
-          console.log("destroy init")
-          this.loaded = false;
+          this.app.destroy(true, true);
           reject("Initialization aborted because destroy was called.");
         } else {
-          this.loaded = true;
           resolve();
         }
       } catch (error) {
-        this.loaded = false;
         reject(error); // Ensure any errors are caught and the promise is rejected
       }
     });
   }
 
   destroy() {
-    console.log("destroy")
     if (this.app && this.loaded) {
-      this.app.destroy({removeView: true});
+      this.app.destroy(true, true);
       this.loaded = false;
-      console.log("destroy method")
     }
     this.stopped = true;
   }
@@ -305,7 +300,6 @@ class MBotScene {
     this.robot.y = 0;
     this.robot.width = config.ROBOT_SIZE * this.pixelsPerMeter;
     this.robot.height = config.ROBOT_SIZE * this.pixelsPerMeter;
-    console.log("robot", this.robot.width, this.robot.height, this.robotContainer.x, this.robotContainer.y)
     this.robotContainer.addChild(this.robot);
 
     this.sceneContainer.addChild(this.robotContainer);
@@ -359,6 +353,8 @@ class MBotScene {
 
     // Interaction code for zooming
     this.app.canvas.addEventListener('wheel', (event) => { this.zoomHandler(event); });
+
+    this.loaded = true;
   }
 
   zoomHandler(event) {

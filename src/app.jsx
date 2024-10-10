@@ -151,12 +151,11 @@ function MBotSceneWrapper({ mbot, connected, requestMap, robotDisplay, laserDisp
   // Ref for the canvas.
   const canvasWrapperRef = useRef(null);
   const scene = useRef(new MBotScene());
-  // State.
-  const [mapData, setMapData] = useState({width: 100, height: 100, metersPerCell: 0.05, origin: [-2.5, -2.5]});
   // Channel data.
-  const POSE_CHANNEL = "MBOT_ODOMETRY";
+  const POSE_CHANNEL = "SLAM_POSE";
   const LIDAR_CHANNEL = "LIDAR";
-  // TODO: Path, particles
+  const PARTICLE_CHANNEL = "SLAM_PARTICLES";
+  const PATH_CHANNEL = "CONTROLLER_PATH";
 
   // Click callback when the user clicks on the scene.
   const handleCanvasClick = useCallback((pos) => {
@@ -207,7 +206,7 @@ function MBotSceneWrapper({ mbot, connected, requestMap, robotDisplay, laserDisp
           setRobotCell(robotCell);
         }
       }).catch((error) => {
-        console.error('Subscription failed for channel', POSE_CHANNEL, error);
+        console.warn('Subscription failed for channel', POSE_CHANNEL, error);
       });
     }
 
@@ -224,11 +223,11 @@ function MBotSceneWrapper({ mbot, connected, requestMap, robotDisplay, laserDisp
         if (!scene.current.loaded) return;
         scene.current.drawLasers(msg.data.ranges, msg.data.thetas);
       }).catch((error) => {
-        console.error('Subscription failed for channel', LIDAR_CHANNEL, error);
+        console.warn('Subscription failed for channel', LIDAR_CHANNEL, error);
       });
     }
     else {
-      scene.current.clearLasers();
+      if (scene.current.loaded) scene.current.clearLasers();
     }
 
     // Return the cleanup function which stops the rerender.
@@ -237,31 +236,79 @@ function MBotSceneWrapper({ mbot, connected, requestMap, robotDisplay, laserDisp
     }
   }, [laserDisplay]);
 
+  // Effect to manage subscribing to the SLAM particles.
+  useEffect(() => {
+    if (particleDisplay) {
+      mbot.subscribe(PARTICLE_CHANNEL, (msg) => {
+        if (!scene.current.loaded) return;
+        // Extract the particles into points.
+        const particleList = msg.data.particles;
+        const points = particleList.map(item => [item.pose.x, item.pose.y]);
+        // Draw the particles.
+        scene.current.drawParticles(points);
+      }).catch((error) => {
+        console.warn('Subscription failed for channel', PARTICLE_CHANNEL, error);
+      });
+    }
+    else {
+      if (scene.current.loaded) scene.current.clearParticles();
+    }
+
+    // Return the cleanup function which stops the rerender.
+    return () => {
+      mbot.unsubscribe(PARTICLE_CHANNEL).catch((err) => console.warn(err));
+    }
+  }, [particleDisplay]);
+
+  // Effect to manage subscribing to the path.
+  useEffect(() => {
+    mbot.subscribe(PATH_CHANNEL, (msg) => {
+      if (!scene.current.loaded) return;
+      scene.current.drawPath(msg.data.path);
+    }).catch((error) => {
+      console.warn('Subscription failed for channel', PATH_CHANNEL, error);
+    });
+
+    // Return the cleanup function which stops the rerender.
+    return () => {
+      mbot.unsubscribe(PATH_CHANNEL).catch((err) => console.warn(err));
+    }
+  }, [particleDisplay]);
+
   // Effect to request the SLAM map.
   useEffect(() => {
     let timerId = null;
 
     async function requestSLAMMap() {
-      const data = await mbot.readMap();
-      setMapData({width: data.width,
-                  height: data.height,
-                  metersPerCell: data.meters_per_cell,
-                  origin: data.origin});
-      if (scene.current.loaded) {
-        scene.current.setMapHeaderData(data.width, data.height, data.meters_per_cell, data.origin);
-        scene.current.updateCells(data.cells);
-      }
+      try {
+        const data = await mbot.readMap();
+        const headerData = {
+          width: data.width,
+          height: data.height,
+          metersPerCell: data.meters_per_cell,
+          origin: data.origin
+        };
 
-      return data;
+        if (scene.current.loaded) {
+          scene.current.setMapHeaderData(data.width, data.height, data.meters_per_cell, data.origin);
+          scene.current.updateCells(data.cells);
+        }
+
+        return headerData;
+      } catch (error) {
+        console.warn("Error reading map:", error);
+        return null;
+      }
     }
 
-    if (requestMap){
+    if (slamMode === config.slam_mode.FULL_SLAM){
       // Check for map once right away.
       requestSLAMMap();
       // Check for map intermittently.
       timerId = setInterval(() => { requestSLAMMap(); }, config.MAP_UPDATE_PERIOD);
     }
     else if (slamMode === config.slam_mode.LOCALIZATION_ONLY) {
+      // Request the map only once if we are in localization mode.
       requestSLAMMap();
     }
 
@@ -269,7 +316,7 @@ function MBotSceneWrapper({ mbot, connected, requestMap, robotDisplay, laserDisp
     return () => {
       if (timerId) clearInterval(timerId);
     };
-  }, [requestMap, slamMode, setMapData]);
+  }, [requestMap, slamMode]);
 
   return (
     <div id="canvas-container" ref={canvasWrapperRef}>
@@ -332,31 +379,31 @@ export default function MBotApp({ mbot }) {
     }
   }, [connected, setHostname]);
 
-    // Effect to manage SLAM mode.
-    useEffect(() => {
-      mbot.subscribe(SLAM_MODE_CHANNEL, (msg) => {
-        const data = msg.data;
-        // Only update if the mode has changed.
-        if (data.slam_mode !== slamMode) {
-          if (data.slam_mode !== config.slam_mode.FULL_SLAM) {
-            // If we are not in mapping mode, stop asking for map.
-            setRequestMap(false);
-          }
-          else {
-            // If we are in mapping mode, start asking for map.
-            setRequestMap(true);
-          }
-          setSlamMode(data.slam_mode);
+  // Effect to manage SLAM mode.
+  useEffect(() => {
+    mbot.subscribe(SLAM_MODE_CHANNEL, (msg) => {
+      const data = msg.data;
+      // Only update if the mode has changed.
+      if (data.slam_mode !== slamMode) {
+        if (data.slam_mode !== config.slam_mode.FULL_SLAM) {
+          // If we are not in mapping mode, stop asking for map.
+          setRequestMap(false);
         }
-      }).then().catch((error) => {
-        console.error('Subscription failed for channel', SLAM_MODE_CHANNEL, error);
-      });
-
-      // Return the cleanup function which stops the subscription.
-      return () => {
-        mbot.unsubscribe(SLAM_MODE_CHANNEL).catch((err) => console.warn(err));
+        else {
+          // If we are in mapping mode, start asking for map.
+          setRequestMap(true);
+        }
+        setSlamMode(data.slam_mode);
       }
-    }, [slamMode, setSlamMode, setRequestMap]);
+    }).then().catch((error) => {
+      console.warn('Subscription failed for channel', SLAM_MODE_CHANNEL, error);
+    });
+
+    // Return the cleanup function which stops the subscription.
+    return () => {
+      mbot.unsubscribe(SLAM_MODE_CHANNEL).catch((err) => console.warn(err));
+    }
+  }, [slamMode, setSlamMode, setRequestMap]);
 
   // Callbacks.
   const onLocalizationMode = useCallback(() => {
