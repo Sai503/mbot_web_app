@@ -23,6 +23,7 @@ var config = {
 
     // Driving info
     ANG_VEL_MULTIPLIER: 5.0,  // Scale to multiply values [0-1] for angular velocity.
+    DRIVE_CMD_RATE: 100,      // Rate for sending drive commands when active.
 
     // Display info
     MAP_COLOUR_HIGH: "#000000",      // Black

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faArrowRotateLeft,
@@ -6,7 +6,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 
 import config from "./config.js";
-import JoyStick from "./joy.js";
+import JoyStick from "./joy";
 
 /********************
  * MOVE PANEL
@@ -14,7 +14,11 @@ import JoyStick from "./joy.js";
 
 function DriveControlPanel({ drivingMode, mbot }) {
   const [speed, setSpeed] = useState(50);
-  const [controlMap, setControlMap] = useState({
+  const [joyActive, setJoyActive] = useState(false);
+  const [keyActive, setKeyActive] = useState(false);
+
+  const driveCmd = useRef({vx: 0, vy: 0, wz: 0});
+  const controlMapRef = useRef({
     s: { pressed: false, fn: "back" },
     w: { pressed: false, fn: "forward" },
     a: { pressed: false, fn: "left" },
@@ -22,125 +26,139 @@ function DriveControlPanel({ drivingMode, mbot }) {
     e: { pressed: false, fn: "tright" },
     q: { pressed: false, fn: "tleft" },
   });
-
-  let x = 0;
-  let y = 0;
-  let t = 0;
+  const keyPressRef = useRef({x: 0, y: 0, t: 0});
 
   const handleKeyDown = useCallback((evt) => {
+    let controlMap = controlMapRef.current;
+    let keyPress = keyPressRef.current;
     if (drivingMode && controlMap[evt.key]) {
-      controlMap[evt.key].pressed = true;
-      if (controlMap[evt.key].fn === "back" && x > -1) x--;
-      if (controlMap[evt.key].fn === "forward" && x < 1) x++;
-      if (controlMap[evt.key].fn === "right" && y > -1) y--;
-      if (controlMap[evt.key].fn === "left" && y < 1) y++;
-      if (controlMap[evt.key].fn === "tright" && t > -1) t--;
-      if (controlMap[evt.key].fn === "tleft" && t < 1) t++;
+      if (!keyActive) setKeyActive(true);
 
-      const vx = x * speed / 100;
-      const vy = y * speed / 100;
-      const wz = config.ANG_VEL_MULTIPLIER * speed * t / 100;
-      drive(vx, vy, wz);
+      controlMap[evt.key].pressed = true;
+      if (controlMap[evt.key].fn === "back" && keyPress.x > -1) keyPress.x--;
+      if (controlMap[evt.key].fn === "forward" && keyPress.x < 1) keyPress.x++;
+      if (controlMap[evt.key].fn === "right" && keyPress.y > -1) keyPress.y--;
+      if (controlMap[evt.key].fn === "left" && keyPress.y < 1) keyPress.y++;
+      if (controlMap[evt.key].fn === "tright" && keyPress.t > -1) keyPress.t--;
+      if (controlMap[evt.key].fn === "tleft" && keyPress.t < 1) keyPress.t++;
+
+      driveCmd.current.vx = keyPress.x * speed / 100;
+      driveCmd.current.vy = keyPress.y * speed / 100;
+      driveCmd.current.wz = config.ANG_VEL_MULTIPLIER * speed * keyPress.t / 100;
     }
-  }, [drivingMode, controlMap, speed, x, y, t]);
+  }, [drivingMode, keyActive, setKeyActive, controlMapRef, keyPressRef, speed]);
 
   const handleKeyUp = useCallback((evt) => {
+    let controlMap = controlMapRef.current;
+    let keyPress = keyPressRef.current;
     if (drivingMode && controlMap[evt.key]) {
       controlMap[evt.key].pressed = false;
-      if (controlMap[evt.key].fn === "back" && x < 1) x++;
-      if (controlMap[evt.key].fn === "forward" && x > -1) x--;
-      if (controlMap[evt.key].fn === "right" && y < 1) y++;
-      if (controlMap[evt.key].fn === "left" && y > -1) y--;
-      if (controlMap[evt.key].fn === "tright" && t < 1) t++;
-      if (controlMap[evt.key].fn === "tleft" && t > -1) t--;
+      if (controlMap[evt.key].fn === "back" && keyPress.x < 1) keyPress.x++;
+      if (controlMap[evt.key].fn === "forward" && keyPress.x > -1) keyPress.x--;
+      if (controlMap[evt.key].fn === "right" && keyPress.y < 1) keyPress.y++;
+      if (controlMap[evt.key].fn === "left" && keyPress.y > -1) keyPress.y--;
+      if (controlMap[evt.key].fn === "tright" && keyPress.t < 1) keyPress.t++;
+      if (controlMap[evt.key].fn === "tleft" && keyPress.t > -1) keyPress.t--;
 
       let reset = true;
       for (const key in controlMap) {
         if (controlMap[key].pressed) reset = false;
       }
-      if (reset) { x = 0; y = 0; t = 0; }
+      if (reset) {
+        keyPress.x = 0;
+        keyPress.y = 0;
+        keyPress.t = 0;
+        if (keyActive) setKeyActive(false);
+      }
 
-      const vx = x * speed / 100;
-      const vy = y * speed / 100;
-      const wz = config.ANG_VEL_MULTIPLIER * speed * t / 100;
-      drive(vx, vy, wz);
+      driveCmd.current.vx = keyPress.x * speed / 100;
+      driveCmd.current.vy = keyPress.y * speed / 100;
+      driveCmd.current.wz = config.ANG_VEL_MULTIPLIER * speed * keyPress.t / 100;
     }
-  }, [drivingMode, controlMap, speed, x, y, t]);
+  }, [drivingMode, keyActive, setKeyActive, controlMapRef, keyPressRef, speed]);
+
+  const handleJoystickMove = useCallback((stickData) => {
+    if (keyActive) return;  // Ignore joystick if we are using the keyboard keys.
+    if (stickData.active !== joyActive) setJoyActive(stickData.active);
+
+    if (!stickData.active) {
+      driveCmd.current.vx = 0;
+      driveCmd.current.vy = 0;
+      driveCmd.current.wz = 0;
+    }
+    else {
+      driveCmd.current.vx = stickData.y * speed / 10000;
+      driveCmd.current.vy = -stickData.x * speed / 10000;
+      driveCmd.current.wz = 0;
+    }
+  }, [keyActive, joyActive, setJoyActive, speed]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('keyup', handleKeyUp);
 
-    // Setup joystick.
-    const style = {
-      internalFillColor: "#1397cf",
-      internalStrokeColor: "#2F65A7",
-      externalStrokeColor: "#2F65A7"
-    };
-    let joy = new JoyStick('joy1Div', style, (stickData) => {
-      const xJoy = stickData.y * speed / 10000;
-      const yJoy = -stickData.x * speed / 10000;
-      drive(xJoy, yJoy);
-    });
-
-    // setTimeout(() => {
-    //   drive(xJoy, yJoy);
-
-    // }, 100);
-
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('keyup', handleKeyUp);
-      stop();
-
-      // Remove all children of joy1Div
-      const joyDiv = document.getElementById('joy1Div');
-      if (joyDiv) {
-        while (joyDiv.firstChild) {
-          joyDiv.removeChild(joyDiv.firstChild);
-        }
-      }
+      mbot.stop();
     };
   }, [handleKeyDown, handleKeyUp, speed]);
 
-  const onSpeedChange = (event) => {
-    setSpeed(event.target.value);
-  };
+  // This effect starts a timer to send commands to the robot IF one of the
+  // control mechanisms is active. This allows us to control the frequency of
+  // the control commands.
+  useEffect(() => {
+    let timerId = null;
 
-  const stop = () => {
-    console.log("STOP robot it was about run into Popeye");
-    mbot.drive(0, 0, 0);
-  };
+    if (joyActive || keyActive) {
+      mbot.drive(driveCmd.current.vx, driveCmd.current.vy, driveCmd.current.wz);
+      timerId = setInterval(() => {
+        mbot.drive(driveCmd.current.vx, driveCmd.current.vy, driveCmd.current.wz);
+      }, config.DRIVE_CMD_RATE);
+    }
 
-  const drive = (vx, vy, wz = 0) => {
-    mbot.drive(vx, vy, wz);
+    // Return the cleanup function which stops the controller and stops the robot..
+    return () => {
+      if (timerId) {
+        clearInterval(timerId);
+        mbot.stop();
+      }
+    };
+  }, [joyActive, keyActive]);
+
+  const joyStyle = {
+    internalFillColor: "#1397cf",
+    internalStrokeColor: "#2F65A7",
+    externalStrokeColor: "#2F65A7"
   };
 
   return (
     <div className="drive-panel-wrapper">
       <div className="drive-buttons">
         <button className="button drive-turn" id="turn-left"
-          onMouseDown={() => drive(0, 0, config.ANG_VEL_MULTIPLIER * speed / 100)}
-          onMouseUp={() => stop()}>
+          onMouseDown={() => mbot.drive(0, 0, config.ANG_VEL_MULTIPLIER * speed / 100)}
+          onMouseUp={() => mbot.stop()}>
           <FontAwesomeIcon icon={faArrowRotateLeft} />
         </button>
 
         <button className="button drive-turn" id="turn-right"
-          onMouseDown={() => drive(0, 0, -config.ANG_VEL_MULTIPLIER * speed / 100)}
-          onMouseUp={() => stop()}>
+          onMouseDown={() => mbot.drive(0, 0, -config.ANG_VEL_MULTIPLIER * speed / 100)}
+          onMouseUp={() => mbot.stop()}>
           <FontAwesomeIcon icon={faArrowRotateRight} />
         </button>
       </div>
 
-      <div id="joy1Div" className={`joyStyle`}></div>
+      <div id="joy1Div" className={`joyStyle`}>
+        <JoyStick containerId="joy1Div" parameters={joyStyle} callback={handleJoystickMove} />
+      </div>
 
       <div className="button-wrapper-row top-spacing">
-        <button className="button stop-color col-lg-12" id="drive-stop" onClick={stop}>Stop</button>
+        <button className="button stop-color col-lg-12" id="drive-stop" onClick={() => mbot.stop()}>Stop</button>
       </div>
 
       <div className="col-lg-12">
         <span>Speed: {speed} &nbsp;&nbsp;</span>
-        <input type="range" min="1" max="100" value={speed} onChange={onSpeedChange}></input>
+        <input type="range" min="1" max="100" value={speed} onChange={(event) => setSpeed(event.target.value)}></input>
       </div>
     </div>
   );
