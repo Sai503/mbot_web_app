@@ -437,6 +437,20 @@ input:checked + .slider.small:before {
   transform: translateX(18px);
 }
 
+/* Disabling the slider */
+.switch input:disabled + .slider {
+  background-color: grey; /* Grey out when inactive */
+}
+
+.switch input:disabled + .slider:before {
+  background-color: #bdbdbd; /* Change the handle color when inactive */
+}
+
+.disabled {
+  pointer-events: none; /* Prevent clicking */
+  opacity: 0.5; /* Visually indicate it's disabled */
+}
+
 /* Rounded sliders */
 .slider.round {
   border-radius: 34px;

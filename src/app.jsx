@@ -3,7 +3,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faBars, faCircleInfo } from '@fortawesome/free-solid-svg-icons'
 
 import config from "./config.js";
-import { isDeepEqual } from "./util.js";
 import { DriveControlPanel } from "./driveControls";
 import { MBotScene } from './scene.js'
 
@@ -61,12 +60,14 @@ function StatusMessage({ robotPose, robotCell, clickedCell }) {
   );
 }
 
-function ToggleSelect({ small, label, explain, checked, onChange }) {
+function ToggleSelect({ small, label, explain, checked, onChange, isActive = true }) {
   const [viewInfo, setViewInfo] = useState(false);
   const [top, setTop] = useState(0);
 
   let sizeCls = "";
   if (small) sizeCls = " small";
+
+  const toggleClasses = isActive ? "slider round" + sizeCls : "slider round disabled" + sizeCls;
 
   return (
     <div className="toggle-wrapper">
@@ -97,9 +98,10 @@ function ToggleSelect({ small, label, explain, checked, onChange }) {
               type="checkbox"
               className="mx-2"
               checked={checked}
-              onChange={onChange}
+              onChange={isActive ? onChange : null}
+              disabled={!isActive}
             />
-            <span className={"slider round" + sizeCls}></span>
+            <span className={toggleClasses}></span>
           </label>
         </div>
       </div>
@@ -151,11 +153,6 @@ function MBotSceneWrapper({ mbot, connected, requestMap, robotDisplay, laserDisp
   // Ref for the canvas.
   const canvasWrapperRef = useRef(null);
   const scene = useRef(new MBotScene());
-  // Channel data.
-  const POSE_CHANNEL = "SLAM_POSE";
-  const LIDAR_CHANNEL = "LIDAR";
-  const PARTICLE_CHANNEL = "SLAM_PARTICLES";
-  const PATH_CHANNEL = "CONTROLLER_PATH";
 
   // Click callback when the user clicks on the scene.
   const handleCanvasClick = useCallback((pos) => {
@@ -196,7 +193,7 @@ function MBotSceneWrapper({ mbot, connected, requestMap, robotDisplay, laserDisp
     if (scene.current.loaded) scene.current.toggleRobotView(robotDisplay);
 
     if (robotDisplay) {
-      mbot.subscribe(POSE_CHANNEL, (msg) => {
+      mbot.subscribe(config.POSE_CHANNEL, (msg) => {
         // Sets the robot position
         setRobotPose({x: msg.data.x, y: msg.data.y, theta: msg.data.theta});
         if (!scene.current.loaded) return;
@@ -206,24 +203,24 @@ function MBotSceneWrapper({ mbot, connected, requestMap, robotDisplay, laserDisp
           setRobotCell(robotCell);
         }
       }).catch((error) => {
-        console.warn('Subscription failed for channel', POSE_CHANNEL, error);
+        console.warn('Subscription failed for channel', config.POSE_CHANNEL, error);
       });
     }
 
     // Return the cleanup function which stops the rerender.
     return () => {
-      mbot.unsubscribe(POSE_CHANNEL).catch((err) => console.warn(err));
+      mbot.unsubscribe(config.POSE_CHANNEL).catch((err) => console.warn(err));
     }
   }, [robotDisplay, setRobotPose, setRobotCell]);
 
   // Effect to manage subscribing to the Lidar.
   useEffect(() => {
     if (laserDisplay) {
-      mbot.subscribe(LIDAR_CHANNEL, (msg) => {
+      mbot.subscribe(config.LIDAR_CHANNEL, (msg) => {
         if (!scene.current.loaded) return;
         scene.current.drawLasers(msg.data.ranges, msg.data.thetas);
       }).catch((error) => {
-        console.warn('Subscription failed for channel', LIDAR_CHANNEL, error);
+        console.warn('Subscription failed for channel', config.LIDAR_CHANNEL, error);
       });
     }
     else {
@@ -232,14 +229,14 @@ function MBotSceneWrapper({ mbot, connected, requestMap, robotDisplay, laserDisp
 
     // Return the cleanup function which stops the rerender.
     return () => {
-      mbot.unsubscribe(LIDAR_CHANNEL).catch((err) => console.warn(err));
+      mbot.unsubscribe(config.LIDAR_CHANNEL).catch((err) => console.warn(err));
     }
   }, [laserDisplay]);
 
   // Effect to manage subscribing to the SLAM particles.
   useEffect(() => {
     if (particleDisplay) {
-      mbot.subscribe(PARTICLE_CHANNEL, (msg) => {
+      mbot.subscribe(config.PARTICLE_CHANNEL, (msg) => {
         if (!scene.current.loaded) return;
         // Extract the particles into points.
         const particleList = msg.data.particles;
@@ -247,7 +244,7 @@ function MBotSceneWrapper({ mbot, connected, requestMap, robotDisplay, laserDisp
         // Draw the particles.
         scene.current.drawParticles(points);
       }).catch((error) => {
-        console.warn('Subscription failed for channel', PARTICLE_CHANNEL, error);
+        console.warn('Subscription failed for channel', config.PARTICLE_CHANNEL, error);
       });
     }
     else {
@@ -256,22 +253,22 @@ function MBotSceneWrapper({ mbot, connected, requestMap, robotDisplay, laserDisp
 
     // Return the cleanup function which stops the rerender.
     return () => {
-      mbot.unsubscribe(PARTICLE_CHANNEL).catch((err) => console.warn(err));
+      mbot.unsubscribe(config.PARTICLE_CHANNEL).catch((err) => console.warn(err));
     }
   }, [particleDisplay]);
 
   // Effect to manage subscribing to the path.
   useEffect(() => {
-    mbot.subscribe(PATH_CHANNEL, (msg) => {
+    mbot.subscribe(config.PATH_CHANNEL, (msg) => {
       if (!scene.current.loaded) return;
       scene.current.drawPath(msg.data.path);
     }).catch((error) => {
-      console.warn('Subscription failed for channel', PATH_CHANNEL, error);
+      console.warn('Subscription failed for channel', config.PATH_CHANNEL, error);
     });
 
     // Return the cleanup function which stops the rerender.
     return () => {
-      mbot.unsubscribe(PATH_CHANNEL).catch((err) => console.warn(err));
+      mbot.unsubscribe(config.PATH_CHANNEL).catch((err) => console.warn(err));
     }
   }, [particleDisplay]);
 
@@ -327,12 +324,17 @@ function MBotSceneWrapper({ mbot, connected, requestMap, robotDisplay, laserDisp
 export default function MBotApp({ mbot }) {
   const [hostname, setHostname] = useState("mbot-???");
   const [connected, setConnected] = useState(false);
-  const [channels, setChannels] = useState(null);
   // Toggle selectors.
   const [robotDisplay, setRobotDisplay] = useState(true);
   const [laserDisplay, setLaserDisplay] = useState(false);
   const [particleDisplay, setParticleDisplay] = useState(false);
   const [drivingMode, setDrivingMode] = useState(false);
+  // Channels to subscribe to.
+  const [poseAvailable, setPoseAvailable] = useState(false);
+  const [laserAvailable, setLaserAvailable] = useState(false);
+  const [mapAvailable, setMapAvailable] = useState(false);
+  const [particlesAvailable, setParticlesAvailable] = useState(false);
+  const [slamModeAvailable, setSlamModeAvailable] = useState(false);
   // Robot parameters.
   const [robotPose, setRobotPose] = useState({x: 0, y: 0, theta: 0});
   const [robotCell, setRobotCell] = useState([0, 0]);
@@ -341,31 +343,50 @@ export default function MBotApp({ mbot }) {
   // Mapping parameters.
   const [slamMode, setSlamMode] = useState(config.slam_mode.INVALID);
   const [requestMap, setRequestMap] = useState(false);
-  const SLAM_MODE_CHANNEL = "SLAM_STATUS";
 
-  // A heartbeat effect that checks if the MBot Bridge backend is connected.
+  // A heartbeat effect that checks if the MBot Bridge backend is connected and
+  // updates which channels we care about are available.
   useEffect(() => {
     let timerId = null;
 
-    function checkConnection() {
-      mbot.readHostname().then((name) => {
+    const chMaps = [
+      {state: poseAvailable, ch: config.POSE_CHANNEL, setter: setPoseAvailable},
+      {state: laserAvailable, ch: config.LIDAR_CHANNEL, setter: setLaserAvailable},
+      {state: mapAvailable, ch: config.SLAM_MAP_CHANNEL, setter: setMapAvailable},
+      {state: particlesAvailable, ch: config.PARTICLE_CHANNEL, setter: setParticlesAvailable},
+      {state: slamModeAvailable, ch: config.SLAM_MODE_CHANNEL, setter: setSlamModeAvailable},
+    ]
+
+    function checkChannels() {
+      mbot.readChannels().then((chs) => {
+        const chsList = chs.map((ch) => ch.channel);
         if (!connected) setConnected(true);
+        // Check if any of the channels we are looking for have either appeared or disappeared.
+        for (const ele of chMaps) {
+          const hasData = chsList.includes(ele.ch);
+          if (hasData != ele.state) ele.setter(hasData);
+        }
       }).catch((err) => {
         if (connected) setConnected(false);
       });
     }
 
     // Check if connected once right away.
-    checkConnection();
+    checkChannels();
 
     // Check for connection intermittently.
-    timerId = setInterval(() => { checkConnection(); }, config.CONNECT_PERIOD);
+    timerId = setInterval(() => { checkChannels(); }, config.CONNECT_PERIOD);
 
     // Return the cleanup function which stops the rerender.
     return () => {
       if (timerId) clearInterval(timerId);
     };
-  }, [connected, setConnected]);
+  }, [connected, setConnected,
+      poseAvailable, setPoseAvailable,
+      laserAvailable, setLaserAvailable,
+      mapAvailable, setMapAvailable,
+      particlesAvailable, setParticlesAvailable,
+      slamModeAvailable, setSlamModeAvailable]);
 
   // Effect to request the MBot hostname on first mounting component.
   useEffect(() => {
@@ -381,7 +402,7 @@ export default function MBotApp({ mbot }) {
 
   // Effect to manage SLAM mode.
   useEffect(() => {
-    mbot.subscribe(SLAM_MODE_CHANNEL, (msg) => {
+    mbot.subscribe(config.SLAM_MODE_CHANNEL, (msg) => {
       const data = msg.data;
       // Only update if the mode has changed.
       if (data.slam_mode !== slamMode) {
@@ -396,12 +417,12 @@ export default function MBotApp({ mbot }) {
         setSlamMode(data.slam_mode);
       }
     }).then().catch((error) => {
-      console.warn('Subscription failed for channel', SLAM_MODE_CHANNEL, error);
+      console.warn('Subscription failed for channel', config.SLAM_MODE_CHANNEL, error);
     });
 
     // Return the cleanup function which stops the subscription.
     return () => {
-      mbot.unsubscribe(SLAM_MODE_CHANNEL).catch((err) => console.warn(err));
+      mbot.unsubscribe(config.SLAM_MODE_CHANNEL).catch((err) => console.warn(err));
     }
   }, [slamMode, setSlamMode, setRequestMap]);
 
@@ -446,7 +467,7 @@ export default function MBotApp({ mbot }) {
       setRequestMap(true);
       setSlamMode(config.slam_mode.FULL_SLAM);
     }
-  }, [slamMode, setSlamMode]);
+  }, [slamMode, setSlamMode, setRequestMap]);
 
   const onResetMap = useCallback(() => {
     if (slamMode === config.slam_mode.FULL_SLAM) {
@@ -490,7 +511,7 @@ export default function MBotApp({ mbot }) {
 
           <div className="row">
             {/* Only show the SLAM control panel if we have received a SLAM status message. */}
-            {slamMode != config.slam_mode.INVALID &&
+            {slamModeAvailable &&
                 <SLAMControlPanel slamMode={slamMode}
                                   onLocalizationMode={() => onLocalizationMode()}
                                   onMappingMode={() => onMappingMode()}
@@ -503,11 +524,11 @@ export default function MBotApp({ mbot }) {
                             explain={"Displays the robot on the map."}
                             onChange={ () => { setRobotDisplay(!robotDisplay); } }/>
 
-              <ToggleSelect label={"Draw Particles"} checked={particleDisplay}
+              <ToggleSelect label={"Draw Particles"} checked={particleDisplay} isActive={particlesAvailable}
                             explain={"Shows all the positions the robot thinks it might be at."}
                             onChange={ () => { setParticleDisplay(!particleDisplay); } }/>
 
-              <ToggleSelect label={"Draw Lasers"} checked={laserDisplay}
+              <ToggleSelect label={"Draw Lasers"} checked={laserDisplay} isActive={laserAvailable}
                             explain={"Displays the Lidar rays."}
                             onChange={ () => { setLaserDisplay(!laserDisplay); } }/>
 
