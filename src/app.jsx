@@ -5,6 +5,7 @@ import { faBars, faCircleInfo } from '@fortawesome/free-solid-svg-icons'
 import config from "./config.js";
 import { DriveControlPanel } from "./driveControls";
 import { MBotScene } from './scene.js'
+import { downloadMapFile } from "./map.js";
 
 function ConnectionStatus({ status }) {
   let msg = "Wait";
@@ -147,12 +148,11 @@ function SLAMControlPanel({ slamMode, onLocalizationMode, onMappingMode, onReset
   );
 }
 
-function MBotSceneWrapper({ mbot, connected, slamMode, robotDisplay, laserDisplay, particleDisplay,
+function MBotSceneWrapper({ mbot, scene, connected, slamMode, robotDisplay, laserDisplay, particleDisplay,
                             poseAvailable, laserAvailable, mapAvailable, particlesAvailable, slamModeAvailable,
                             setClickedCell, setRobotPose, setRobotCell}) {
   // Ref for the canvas.
   const canvasWrapperRef = useRef(null);
-  const scene = useRef(new MBotScene());
 
   // Click callback when the user clicks on the scene.
   const handleCanvasClick = useCallback((pos) => {
@@ -343,6 +343,7 @@ function MBotSceneWrapper({ mbot, connected, slamMode, robotDisplay, laserDispla
 }
 
 export default function MBotApp({ mbot }) {
+  const scene = useRef(new MBotScene());
   const [hostname, setHostname] = useState("mbot-???");
   const [connected, setConnected] = useState(false);
   // Toggle selectors.
@@ -482,13 +483,21 @@ export default function MBotApp({ mbot }) {
   }, [slamMode]);
 
   const saveMap = useCallback(() => {
+    if (!scene.current.loaded) return;
+    const mapData = scene.current.getMapData();
 
+    if (mapData === null) {
+      console.log("Error saving map: Invalid map data");
+      return;
+    }
+
+    downloadMapFile(mapData);
   }, []);
 
   return (
     <div id="wrapper">
       <div id="main">
-        <MBotSceneWrapper mbot={mbot} connected={connected}
+        <MBotSceneWrapper mbot={mbot} scene={scene} connected={connected}
                           robotDisplay={robotDisplay}
                           laserDisplay={laserDisplay}
                           particleDisplay={particleDisplay}
