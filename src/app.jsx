@@ -147,8 +147,8 @@ function SLAMControlPanel({ slamMode, onLocalizationMode, onMappingMode, onReset
   );
 }
 
-function MBotSceneWrapper({ mbot, connected, robotDisplay, laserDisplay, particleDisplay,
-                            slamMode, setSlamMode,
+function MBotSceneWrapper({ mbot, connected, slamMode, robotDisplay, laserDisplay, particleDisplay,
+                            poseAvailable, laserAvailable, mapAvailable, particlesAvailable, slamModeAvailable,
                             setClickedCell, setRobotPose, setRobotCell}) {
   // Ref for the canvas.
   const canvasWrapperRef = useRef(null);
@@ -186,7 +186,7 @@ function MBotSceneWrapper({ mbot, connected, robotDisplay, laserDisplay, particl
   useEffect(() => {
     if (scene.current.loaded) scene.current.toggleRobotView(robotDisplay);
 
-    if (robotDisplay) {
+    if (connected && robotDisplay && poseAvailable) {
       mbot.subscribe(config.POSE_CHANNEL, (msg) => {
         // Sets the robot position
         setRobotPose({x: msg.data.x, y: msg.data.y, theta: msg.data.theta});
@@ -203,13 +203,13 @@ function MBotSceneWrapper({ mbot, connected, robotDisplay, laserDisplay, particl
 
     // Return the cleanup function which stops the rerender.
     return () => {
-      mbot.unsubscribe(config.POSE_CHANNEL).catch((err) => console.warn(err));
+      if (connected) mbot.unsubscribe(config.POSE_CHANNEL).catch((err) => console.warn(err));
     }
-  }, [robotDisplay, setRobotPose, setRobotCell]);
+  }, [connected, robotDisplay, poseAvailable, setRobotPose, setRobotCell]);
 
   // Effect to manage subscribing to the Lidar.
   useEffect(() => {
-    if (laserDisplay) {
+    if (connected && laserDisplay && laserAvailable) {
       mbot.subscribe(config.LIDAR_CHANNEL, (msg) => {
         if (!scene.current.loaded) return;
         scene.current.drawLasers(msg.data.ranges, msg.data.thetas);
@@ -223,13 +223,13 @@ function MBotSceneWrapper({ mbot, connected, robotDisplay, laserDisplay, particl
 
     // Return the cleanup function which stops the rerender.
     return () => {
-      mbot.unsubscribe(config.LIDAR_CHANNEL).catch((err) => console.warn(err));
+      if (connected) mbot.unsubscribe(config.LIDAR_CHANNEL).catch((err) => console.warn(err));
     }
-  }, [laserDisplay]);
+  }, [connected, laserAvailable, laserDisplay]);
 
   // Effect to manage subscribing to the SLAM particles.
   useEffect(() => {
-    if (particleDisplay) {
+    if (connected && particleDisplay && particlesAvailable) {
       mbot.subscribe(config.PARTICLE_CHANNEL, (msg) => {
         if (!scene.current.loaded) return;
         // Extract the particles into points.
@@ -247,24 +247,26 @@ function MBotSceneWrapper({ mbot, connected, robotDisplay, laserDisplay, particl
 
     // Return the cleanup function which stops the rerender.
     return () => {
-      mbot.unsubscribe(config.PARTICLE_CHANNEL).catch((err) => console.warn(err));
+      if (connected) mbot.unsubscribe(config.PARTICLE_CHANNEL).catch((err) => console.warn(err));
     }
-  }, [particleDisplay]);
+  }, [connected, particleDisplay, particlesAvailable]);
 
   // Effect to manage subscribing to the path.
   useEffect(() => {
-    mbot.subscribe(config.PATH_CHANNEL, (msg) => {
-      if (!scene.current.loaded) return;
-      scene.current.drawPath(msg.data.path);
-    }).catch((error) => {
-      console.warn('Subscription failed for channel', config.PATH_CHANNEL, error);
-    });
+    if (connected) {
+      mbot.subscribe(config.PATH_CHANNEL, (msg) => {
+        if (!scene.current.loaded) return;
+        scene.current.drawPath(msg.data.path);
+      }).catch((error) => {
+        console.warn('Subscription failed for channel', config.PATH_CHANNEL, error);
+      });
+    }
 
     // Return the cleanup function which stops the rerender.
     return () => {
-      mbot.unsubscribe(config.PATH_CHANNEL).catch((err) => console.warn(err));
+      if (connected) mbot.unsubscribe(config.PATH_CHANNEL).catch((err) => console.warn(err));
     }
-  }, [particleDisplay]);
+  }, [connected]);
 
   // Effect to request the SLAM map.
   useEffect(() => {
@@ -289,7 +291,6 @@ function MBotSceneWrapper({ mbot, connected, robotDisplay, laserDisplay, particl
         mapRequestCount = 0;  // If the map was retrieved, reset the fail count.
         return headerData;
       } catch (error) {
-        console.warn("Error reading map:", error);
         mapRequestCount++;  // Keep track of how many failed map requests we have made.
         return null;
       }
@@ -303,6 +304,7 @@ function MBotSceneWrapper({ mbot, connected, robotDisplay, laserDisplay, particl
       timerId = setInterval(() => { requestSLAMMap().then((val) => {
         if (mapRequestCount > config.STALE_MAP_COUNT) {
           // Timeout condition. Give up full SLAM mode and reset.
+          console.warn("No map available! Resetting SLAM to IDLE.");
           mbot.resetSLAM(config.slam_mode.IDLE);
           clearInterval(timerId);
         }
@@ -318,6 +320,7 @@ function MBotSceneWrapper({ mbot, connected, robotDisplay, laserDisplay, particl
               if (val) clearInterval(timerId); // If we get a map, stop requesting.
               if (mapRequestCount > config.STALE_MAP_COUNT) {
                 // Timeout condition. Give up localization mode and reset to IDLE.
+                console.warn("No map available! Resetting SLAM to IDLE.");
                 mbot.resetSLAM(config.slam_mode.IDLE);
                 clearInterval(timerId);
               }
@@ -490,7 +493,11 @@ export default function MBotApp({ mbot }) {
                           laserDisplay={laserDisplay}
                           particleDisplay={particleDisplay}
                           slamMode={slamMode}
-                          setSlamMode={setSlamMode}
+                          poseAvailable={poseAvailable}
+                          laserAvailable={laserAvailable}
+                          mapAvailable={mapAvailable}
+                          particlesAvailable={particlesAvailable}
+                          slamModeAvailable={slamModeAvailable}
                           setClickedCell={setClickedCell}
                           setRobotPose={setRobotPose}
                           setRobotCell={setRobotCell} />
