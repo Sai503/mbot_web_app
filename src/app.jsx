@@ -147,7 +147,7 @@ function SLAMControlPanel({ slamMode, onLocalizationMode, onMappingMode, onReset
   );
 }
 
-function MBotSceneWrapper({ mbot, connected, requestMap, robotDisplay, laserDisplay, particleDisplay,
+function MBotSceneWrapper({ mbot, connected, robotDisplay, laserDisplay, particleDisplay,
                             slamMode, setSlamMode,
                             setClickedCell, setRobotPose, setRobotCell}) {
   // Ref for the canvas.
@@ -170,21 +170,15 @@ function MBotSceneWrapper({ mbot, connected, requestMap, robotDisplay, laserDisp
 
   // Initialization of the scene.
   useEffect(() => {
-    const runID = Math.floor(Math.random() * 10000);
-    console.log("MBot Scene Init Effect", runID);
-
     scene.current.init().then(() => {
-      console.log("Init scene complete", runID, scene.current.loaded)
       scene.current.createScene(canvasWrapperRef.current);
       scene.current.clickCallback = handleCanvasClick;
     }).catch((error) => {
-      console.warn(error, runID);
+      console.warn(error);
     });
 
-    // Return the cleanup function which stops the rerender.
     return () => {
-      console.log("CLEANUP INIT SCENE", runID);
-      // scene.current.destroy();
+      // Clean up.
     }
   }, [canvasWrapperRef, handleCanvasClick]);
 
@@ -275,6 +269,7 @@ function MBotSceneWrapper({ mbot, connected, requestMap, robotDisplay, laserDisp
   // Effect to request the SLAM map.
   useEffect(() => {
     let timerId = null;
+    let mapRequestCount = 0;
 
     async function requestSLAMMap() {
       try {
@@ -291,29 +286,52 @@ function MBotSceneWrapper({ mbot, connected, requestMap, robotDisplay, laserDisp
           scene.current.updateCells(data.cells);
         }
 
+        mapRequestCount = 0;  // If the map was retrieved, reset the fail count.
         return headerData;
       } catch (error) {
         console.warn("Error reading map:", error);
+        mapRequestCount++;  // Keep track of how many failed map requests we have made.
         return null;
       }
     }
 
-    if (slamMode === config.slam_mode.FULL_SLAM){
+    if (slamMode === config.slam_mode.FULL_SLAM ||
+        slamMode === config.slam_mode.MAPPING_ONLY){
       // Check for map once right away.
       requestSLAMMap();
       // Check for map intermittently.
-      timerId = setInterval(() => { requestSLAMMap(); }, config.MAP_UPDATE_PERIOD);
+      timerId = setInterval(() => { requestSLAMMap().then((val) => {
+        if (mapRequestCount > config.STALE_MAP_COUNT) {
+          // Timeout condition. Give up full SLAM mode and reset.
+          mbot.resetSLAM(config.slam_mode.IDLE);
+          clearInterval(timerId);
+        }
+      }); }, config.MAP_UPDATE_PERIOD);
     }
     else if (slamMode === config.slam_mode.LOCALIZATION_ONLY) {
-      // Request the map only once if we are in localization mode.
-      requestSLAMMap();
+      // Try requesting the map only once if we are in localization mode.
+      requestSLAMMap().then((val) => {
+        if (!val) {
+          // If we didn't get a SLAM map, keep asking for one until we get one or we timeout.
+          timerId = setInterval(() => {
+            requestSLAMMap().then((val) => {
+              if (val) clearInterval(timerId); // If we get a map, stop requesting.
+              if (mapRequestCount > config.STALE_MAP_COUNT) {
+                // Timeout condition. Give up localization mode and reset to IDLE.
+                mbot.resetSLAM(config.slam_mode.IDLE);
+                clearInterval(timerId);
+              }
+            });
+          }, config.MAP_UPDATE_PERIOD);
+        }
+      });
     }
 
-    // Return the cleanup function which stops the rerender.
+    // On quit, stop requesting.
     return () => {
       if (timerId) clearInterval(timerId);
     };
-  }, [requestMap, slamMode]);
+  }, [slamMode]);
 
   return (
     <div id="canvas-container" ref={canvasWrapperRef}>
@@ -342,7 +360,8 @@ export default function MBotApp({ mbot }) {
   const [clickedCell, setClickedCell] = useState([]);
   // Mapping parameters.
   const [slamMode, setSlamMode] = useState(config.slam_mode.INVALID);
-  const [requestMap, setRequestMap] = useState(false);
+  // Saves the SLAM mode globally to avoid having to condition the status effect on the slamMode state.
+  const latestSlamMode = useRef(config.slam_mode.INVALID);
 
   // A heartbeat effect that checks if the MBot Bridge backend is connected and
   // updates which channels we care about are available.
@@ -402,19 +421,14 @@ export default function MBotApp({ mbot }) {
 
   // Effect to manage SLAM mode.
   useEffect(() => {
+    if (!slamModeAvailable) return;
+
     mbot.subscribe(config.SLAM_MODE_CHANNEL, (msg) => {
       const data = msg.data;
       // Only update if the mode has changed.
-      if (data.slam_mode !== slamMode) {
-        if (data.slam_mode !== config.slam_mode.FULL_SLAM) {
-          // If we are not in mapping mode, stop asking for map.
-          setRequestMap(false);
-        }
-        else {
-          // If we are in mapping mode, start asking for map.
-          setRequestMap(true);
-        }
+      if (data.slam_mode !== latestSlamMode.current) {
         setSlamMode(data.slam_mode);
+        latestSlamMode.current = data.slam_mode;
       }
     }).then().catch((error) => {
       console.warn('Subscription failed for channel', config.SLAM_MODE_CHANNEL, error);
@@ -424,37 +438,26 @@ export default function MBotApp({ mbot }) {
     return () => {
       mbot.unsubscribe(config.SLAM_MODE_CHANNEL).catch((err) => console.warn(err));
     }
-  }, [slamMode, setSlamMode, setRequestMap]);
+  }, [slamModeAvailable, latestSlamMode, setSlamMode]);
 
   // Callbacks.
   const onLocalizationMode = useCallback(() => {
     if (slamMode === config.slam_mode.IDLE) {
       // State is idle. Change to localization only.
       mbot.resetSLAM(config.slam_mode.LOCALIZATION_ONLY, false);
-      // Make sure we are asking for the map. This will stop once we are in IDLE mode.
-      setRequestMap(true);
-
       setSlamMode(config.slam_mode.LOCALIZATION_ONLY);
     }
-    else {
+    else if (slamModeAvailable) {
       // We are in some other state. Turn back to idle.
       mbot.resetSLAM(config.slam_mode.IDLE);
-
-      // Stop asking for map.
-      setRequestMap(false);
-      // this.stopRequestInterval();
-
       setSlamMode(config.slam_mode.IDLE);
     }
-  }, [slamMode, setSlamMode, setRequestMap]);
+  }, [slamModeAvailable, slamMode, setSlamMode]);
 
   const onMappingMode = useCallback(() => {
     if (slamMode === config.slam_mode.FULL_SLAM) {
       // If we're in full slam, we need to reset the robot to localization only mode.
       mbot.resetSLAM(config.slam_mode.LOCALIZATION_ONLY, true);
-
-      // Stop asking for map.
-      setRequestMap(false);
       setSlamMode(config.slam_mode.LOCALIZATION_ONLY);
     }
     else if (slamMode === config.slam_mode.LOCALIZATION_ONLY) {
@@ -462,12 +465,9 @@ export default function MBotApp({ mbot }) {
       if (!confirm("This will overwrite the current map. Are you sure?")) return;
 
       mbot.resetSLAM(config.slam_mode.FULL_SLAM, false);
-
-      // Start asking for map.
-      setRequestMap(true);
       setSlamMode(config.slam_mode.FULL_SLAM);
     }
-  }, [slamMode, setSlamMode, setRequestMap]);
+  }, [slamMode, setSlamMode]);
 
   const onResetMap = useCallback(() => {
     if (slamMode === config.slam_mode.FULL_SLAM) {
@@ -485,7 +485,7 @@ export default function MBotApp({ mbot }) {
   return (
     <div id="wrapper">
       <div id="main">
-        <MBotSceneWrapper mbot={mbot} connected={connected} requestMap={requestMap}
+        <MBotSceneWrapper mbot={mbot} connected={connected}
                           robotDisplay={robotDisplay}
                           laserDisplay={laserDisplay}
                           particleDisplay={particleDisplay}
