@@ -9,6 +9,7 @@ else
   echo "Building the webapp..."
   echo "#############################"
   npm install
+  npm link mbot-js-api
   npm run build
 fi
 
@@ -38,7 +39,6 @@ fi
 
 # Copy over all the needed Python code.
 sudo cp mbot_omni_app.py /data/www/mbot/api
-sudo cp -r app/ /data/www/mbot/api
 
 if [ ! -f "/etc/systemd/system/mbot-web-server.service" ]; then
   # This is the first time installing.

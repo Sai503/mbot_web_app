@@ -18,9 +18,6 @@ if [ ! -d $MBOT_APP_ENV ]; then
     python3 -m venv --system-site-packages $MBOT_APP_ENV
 fi
 
-# Ensure numpy is globally installed, since on the Raspberry Pi the pip wheel doesn't work.
-sudo apt install -y python3-numpy
-
 source $MBOT_APP_ENV/bin/activate
 
 # Install the Python requirements into the env.

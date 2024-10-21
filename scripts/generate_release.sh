@@ -32,7 +32,7 @@ npm install
 npm run build
 
 # Make a new top level directory and copy everything into it.
-INCLUDES="dist/ app/ config/ \
+INCLUDES="dist/ config/ \
           scripts/install_nginx.sh \
           scripts/install_python_deps.sh \
           scripts/deploy_app.sh \

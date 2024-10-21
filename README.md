@@ -41,6 +41,13 @@ nvm install 18
 ```
 Now you should have the `node` and `npm` command installed. You can check with `node --version` and `npm --version`.
 
+We also need MBot Bridge to build the web app. Clone [MBot Bridge](https://github.com/mbot-project/mbot_bridge/). Then do:
+  ```bash
+  cd mbot_bridge/mbot_js
+  npm install
+  npm link
+  ```
+
 ### Installing from Source on a Robot
 
 To set up the webapp on a new robot from source, use the helper scripts. First, install nginx and the Python dependencies:
@@ -64,11 +71,18 @@ If you are developing this app and want to run it locally, follow these instruct
 
 #### Installation
 
-First install packages with:
-```bash
-npm install
-```
-This will grab all the packages needed to run the React app.
+First install packages and the MBot Bridge dependency:
+1. Clone [MBot Bridge](https://github.com/mbot-project/mbot_bridge/). Then do:
+  ```bash
+  cd mbot_bridge/mbot_js
+  npm install
+  npm link
+  ```
+2. In this repo, do:
+  ```bash
+  npm install
+  npm link mbot-js-api
+  ```
 
 #### Running
 
