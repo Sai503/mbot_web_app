@@ -157,7 +157,7 @@ function MBotSceneWrapper({ mbot, scene, connected, slamMode, robotDisplay, lase
   // Click callback when the user clicks on the scene.
   const handleCanvasClick = useCallback((pos) => {
     if (!scene.current.loaded) return;
-    if (pos.length === 0 || scene.current.isMapLoaded()) {
+    if (pos.length === 0 || !scene.current.isMapLoaded()) {
       // If the map is not loaded or an empty cell is passed, clear.
       setClickedCell([]);
       return;
