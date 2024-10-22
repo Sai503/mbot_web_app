@@ -144,3 +144,18 @@ where the Flask server is running.
 ```bash
 sudo systemctl stop mbot-web-server.service
 ```
+
+## Generating a Release
+
+To generate a new release of the web app with version `vX.Y.Z`, do the following:
+1. Create a new branch with the name `vX.Y.Z-rc`.
+2. Modify the `"version"` tag in `package.json` to `vX.Y.Z`.
+3. Use the `generate_release.sh` script to create the prebuilt release:
+  ```bash
+  ./scripts/generate_release.sh -v vX.Y.Z [-b PATH/TO/BRIDGE]
+  ```
+  The `-b` argument is optional, and lets you pass a path to a local version of the MBot Bridge to compile against. By default, the latest compatible release of the MBot Bridge will be downloaded from source.
+
+  In general, it is good practice to use a released version and specify this in the release notes. You may want to use a local version to generate a candidate release with an unreleased bridge API.
+4. Download generated file `mbot_web_app-vX.Y.Z.tar.gz`.
+5. Create a release on GitHub and upload file `mbot_web_app-vX.Y.Z.tar.gz` to the release.
