@@ -256,7 +256,15 @@ function MBotSceneWrapper({ mbot, scene, connected, slamMode, robotDisplay, lase
     if (connected) {
       mbot.subscribe(config.PATH_CHANNEL, (msg) => {
         if (!scene.current.loaded) return;
-        scene.current.drawPath(msg.data.path);
+        const pathPoints = msg.data.path;
+        if (pathPoints.length === 0) {
+          scene.current.clearPath();  // If path length is zero, clear and return.
+        }
+        else {
+          // Extract coordinates of the path and draw.
+          const points = pathPoints.map(item => [item.x, item.y]);
+          scene.current.drawPath(points);
+        }
       }).catch((error) => {
         console.warn('Subscription failed for channel', config.PATH_CHANNEL, error);
       });
@@ -295,6 +303,8 @@ function MBotSceneWrapper({ mbot, scene, connected, slamMode, robotDisplay, lase
         return null;
       }
     }
+
+    if (scene.current.loaded) scene.current.clearPath();  // If there is a path, clear it.
 
     if (slamMode === config.slam_mode.FULL_SLAM ||
         slamMode === config.slam_mode.MAPPING_ONLY){

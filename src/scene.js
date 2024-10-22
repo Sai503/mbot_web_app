@@ -515,6 +515,8 @@ class MBotScene {
 
   drawPath(path, color = "rgb(255, 25, 25)", line_width = 0.5) {
     this.pathGraphics.clear();
+    if (path.length === 0) return;  // Don't draw if the path is empty.
+
     this.pathGraphics.beginPath();
     let current = this.posToPixels(path[0][0], path[0][1]);
     this.pathGraphics.moveTo(current[0], current[1]);
