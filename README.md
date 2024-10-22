@@ -59,6 +59,10 @@ Then, build and install the app.
 ```bash
 ./scripts/deploy_app.sh
 ```
+By default, this will grab the latest compatible release of the [MBot Bridge](https://github.com/mbot-project/mbot_bridge/). If you want to use a local version of the Bridge API, pass the path to your copy of the MBot Bridge repository:
+```bash
+./scripts/deploy_app.sh --bridge-path PATH/TO/BRIDGE
+```
 The webapp is accessible by typing the robot's IP into the browser.
 
 Once you have done the setup once, you only need to rerun the `deploy_app.sh` script in order to update the webapp code with a new version.
