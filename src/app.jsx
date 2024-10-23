@@ -111,15 +111,16 @@ function ToggleSelect({ small, label, explain, checked, onChange, isActive = tru
 }
 
 function SLAMControlPanel({ slamMode, onLocalizationMode, onMappingMode, onResetMap, saveMap }) {
+  const isActive = (slamMode !== config.slam_mode.IDLE) && (slamMode !== config.slam_mode.INVALID);
   return (
     <>
       <ToggleSelect
         label={"Localization Mode"}
         explain={"Toggles localization mode and displays map."}
-        checked={slamMode !== config.slam_mode.IDLE}
+        checked={isActive}
         onChange={onLocalizationMode}
       />
-      {slamMode !== config.slam_mode.IDLE &&
+      {isActive &&
         <div className="subpanel">
           <ToggleSelect
             label={"Mapping Mode"}
@@ -148,7 +149,7 @@ function SLAMControlPanel({ slamMode, onLocalizationMode, onMappingMode, onReset
   );
 }
 
-function MBotSceneWrapper({ mbot, scene, connected, slamMode, robotDisplay, laserDisplay, particleDisplay,
+function MBotSceneWrapper({ mbot, scene, connected, slamMode, robotDisplay, laserDisplay, particleDisplay, mapDisplay,
                             poseAvailable, laserAvailable, mapAvailable, particlesAvailable, slamModeAvailable,
                             setClickedCell, setRobotPose, setRobotCell}) {
   // Ref for the canvas.
@@ -304,9 +305,15 @@ function MBotSceneWrapper({ mbot, scene, connected, slamMode, robotDisplay, lase
       }
     }
 
-    if (scene.current.loaded) scene.current.clearPath();  // If there is a path, clear it.
+    if (scene.current.loaded) {
+      scene.current.clear();  // Clear the scene on change.
+    }
 
-    if (slamMode === config.slam_mode.FULL_SLAM ||
+    // If we are making a map OR there is no SLAM mode but the user has
+    // requested to visualize the map, request the map at a regular interval.
+    // If the request fails, after a timeout period the request will stop.
+    if ((!slamModeAvailable && mapDisplay) ||
+        slamMode === config.slam_mode.FULL_SLAM ||
         slamMode === config.slam_mode.MAPPING_ONLY){
       // Check for map once right away.
       requestSLAMMap();
@@ -315,7 +322,7 @@ function MBotSceneWrapper({ mbot, scene, connected, slamMode, robotDisplay, lase
         if (mapRequestCount > config.STALE_MAP_COUNT) {
           // Timeout condition. Give up full SLAM mode and reset.
           console.warn("No map available! Resetting SLAM to IDLE.");
-          mbot.resetSLAM(config.slam_mode.IDLE);
+          if (slamModeAvailable) mbot.resetSLAM(config.slam_mode.IDLE);
           clearInterval(timerId);
         }
       }); }, config.MAP_UPDATE_PERIOD);
@@ -344,7 +351,7 @@ function MBotSceneWrapper({ mbot, scene, connected, slamMode, robotDisplay, lase
     return () => {
       if (timerId) clearInterval(timerId);
     };
-  }, [slamMode]);
+  }, [slamMode, slamModeAvailable, mapDisplay]);
 
   return (
     <div id="canvas-container" ref={canvasWrapperRef}>
@@ -360,6 +367,7 @@ export default function MBotApp({ mbot }) {
   const [robotDisplay, setRobotDisplay] = useState(true);
   const [laserDisplay, setLaserDisplay] = useState(false);
   const [particleDisplay, setParticleDisplay] = useState(false);
+  const [mapDisplay, setMapDisplay] = useState(false);
   const [drivingMode, setDrivingMode] = useState(false);
   // Channels to subscribe to.
   const [poseAvailable, setPoseAvailable] = useState(false);
@@ -511,6 +519,7 @@ export default function MBotApp({ mbot }) {
                           robotDisplay={robotDisplay}
                           laserDisplay={laserDisplay}
                           particleDisplay={particleDisplay}
+                          mapDisplay={mapDisplay}
                           slamMode={slamMode}
                           poseAvailable={poseAvailable}
                           laserAvailable={laserAvailable}
@@ -543,6 +552,13 @@ export default function MBotApp({ mbot }) {
                                   onMappingMode={() => onMappingMode()}
                                   onResetMap={() => onResetMap()}
                                   saveMap={() => saveMap()} />
+              }
+
+              {/* If there is no SLAM mode, provide the option to display the map, if available. */}
+              {!slamModeAvailable &&
+               <ToggleSelect label={"Draw Map"} checked={mapDisplay} isActive={mapAvailable}
+                             explain={"Displays the SLAM map."}
+                             onChange={ () => { setMapDisplay(!mapDisplay); } }/>
               }
 
               { /* Checkboxes for map visualization. */}
