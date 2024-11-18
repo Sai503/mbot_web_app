@@ -23,6 +23,7 @@ var config = {
 
     // Driving info
     ANG_VEL_MULTIPLIER: 5.0,  // Scale to multiply values [0-1] for angular velocity.
+    DRIVE_CMD_RATE: 100,      // Rate for sending drive commands when active.
 
     // Display info
     MAP_COLOUR_HIGH: "#000000",      // Black
@@ -46,7 +47,15 @@ var config = {
         LOCALIZATION_ONLY: 2,
         FULL_SLAM: 3,
         IDLE: 99,
-    }
+    },
+
+    // MBot Channels.
+    POSE_CHANNEL: "SLAM_POSE",
+    LIDAR_CHANNEL: "LIDAR",
+    PARTICLE_CHANNEL: "SLAM_PARTICLES",
+    PATH_CHANNEL: "CONTROLLER_PATH",
+    SLAM_MODE_CHANNEL: "SLAM_STATUS",
+    SLAM_MAP_CHANNEL: "SLAM_MAP",
 };
 
 export default config;

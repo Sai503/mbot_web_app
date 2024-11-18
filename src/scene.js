@@ -198,26 +198,67 @@ class MBotScene {
 
     this.robotState = {x: 0, y: 0, theta: 0};
     // Map data.
-    this.origin = [0, 0];
-    this.metersPerCell = 0.05;
+    const DEFAULT_WIDTH = 100;  // Default number of cells if no map is provided.
+    this.metersPerCell = 0.05;  // Default meters per cell.
+    const origin = -this.metersPerCell * DEFAULT_WIDTH / 2;  // By default, origin is in the center.
+    this.origin = [origin, origin];
     this.pixWidth = config.CANVAS_DISPLAY_WIDTH;
     this.pixHeight = config.CANVAS_DISPLAY_HEIGHT;
-    this.pixPerCell = 5;
+    this.pixPerCell = this.pixWidth / DEFAULT_WIDTH;
     this.pixelsPerMeter = this.pixPerCell / this.metersPerCell;
 
     this.occupancyGrid = new OccupancyGrid([this.pixWidth, this.pixHeight]);
+    this.occupancyGrid.setMapData(DEFAULT_WIDTH, DEFAULT_WIDTH, this.metersPerCell, this.origin);
 
     this.dragStart = null;
     this.clickStart = null;
     this.clickCallback = (pos) => {};
+
+    this.stopped = false;
+    this.loaded = false;
   }
 
   async init() {
-    this.app = new Application();
-    await this.app.init({resizeTo: window, backgroundColor: 0xc9d1d9 });
+    return new Promise(async (resolve, reject) => {
 
-    const imgUrl = new URL('./images/mbot.png', import.meta.url).href;
-    this.robotImage = await Assets.load(imgUrl);
+      if (this.stopped) {
+        this.loaded = false;
+        reject(new Error("Initialization aborted because destroy was called."));
+        return;
+      }
+
+      if (this.loaded || this.app) {
+        reject("App is already initialized or initialization was already called.");
+      }
+
+      this.app = new Application();
+      this.loaded = false;
+
+      try {
+        await this.app.init({resizeTo: window, backgroundColor: 0xc9d1d9 });
+
+        const imgUrl = new URL('./images/mbot.png', import.meta.url).href;
+        this.robotImage = await Assets.load(imgUrl);
+
+        // Check one last time before considering initialization complete
+        if (this.stopped) {
+          this.app.destroy(true, true);
+          reject("Initialization aborted because destroy was called.");
+        } else {
+          resolve();
+        }
+      } catch (error) {
+        reject(error); // Ensure any errors are caught and the promise is rejected
+      }
+    });
+  }
+
+  destroy() {
+    if (this.app && this.loaded) {
+      this.app.destroy(true, true);
+      this.loaded = false;
+    }
+    this.stopped = true;
   }
 
   createScene(ele) {
@@ -312,6 +353,8 @@ class MBotScene {
 
     // Interaction code for zooming
     this.app.canvas.addEventListener('wheel', (event) => { this.zoomHandler(event); });
+
+    this.loaded = true;
   }
 
   zoomHandler(event) {
@@ -390,6 +433,10 @@ class MBotScene {
     return this.occupancyGrid.getMapData();
   }
 
+  isMapLoaded() {
+    return this.occupancyGrid.mapCells.length > 0;
+  }
+
   posToPixels(x, y) {
     let u = (x - this.origin[0]) * this.pixelsPerMeter;
     let v = this.pixHeight - (y - this.origin[1]) * this.pixelsPerMeter;
@@ -435,8 +482,8 @@ class MBotScene {
     this.robotState.theta = theta;
   }
 
-  toggleRobotView() {
-    this.robot.visible = !this.robot.visible;
+  toggleRobotView(visible) {
+    this.robot.visible = visible;
   }
 
   updateCells(cells) {
@@ -463,11 +510,13 @@ class MBotScene {
   }
 
   clearLasers() {
-    this.laserGraphics.clear();
+    if (this.laserGraphics) this.laserGraphics.clear();
   }
 
   drawPath(path, color = "rgb(255, 25, 25)", line_width = 0.5) {
     this.pathGraphics.clear();
+    if (path.length === 0) return;  // Don't draw if the path is empty.
+
     this.pathGraphics.beginPath();
     let current = this.posToPixels(path[0][0], path[0][1]);
     this.pathGraphics.moveTo(current[0], current[1]);
