@@ -2,7 +2,7 @@
 set -e  # Quit on error.
 
 VERSION=""               # The version of this release.
-BRIDGE_VERSION="v1.0.0"  # The MBot Bridge version to download if no path is passed.
+BRIDGE_VERSION="v1.1.0"  # The MBot Bridge version to download if no path is passed.
 BRIDGE_PATH=""           # The path to a local version of MBot Bridge. Overrides downloading a release.
 
 # Directory where the script is executed from
