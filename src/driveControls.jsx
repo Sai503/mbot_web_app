@@ -17,16 +17,16 @@ function DriveControlPanel({ drivingMode, mbot }) {
   const [joyActive, setJoyActive] = useState(false);
   const [keyActive, setKeyActive] = useState(false);
 
-  const driveCmd = useRef({vx: 0, vy: 0, wz: 0});
+  const driveCmd = useRef({ vx: 0, vy: 0, wz: 0 });
   const controlMapRef = useRef({
     s: { pressed: false, fn: "back" },
     w: { pressed: false, fn: "forward" },
-    a: { pressed: false, fn: "left" },
-    d: { pressed: false, fn: "right" },
-    e: { pressed: false, fn: "tright" },
-    q: { pressed: false, fn: "tleft" },
+    a: { pressed: false, fn: "tleft" },
+    d: { pressed: false, fn: "tright" },
+    e: { pressed: false, fn: "right" },
+    q: { pressed: false, fn: "left" },
   });
-  const keyPressRef = useRef({x: 0, y: 0, t: 0});
+  const keyPressRef = useRef({ x: 0, y: 0, t: 0 });
 
   const handleKeyDown = useCallback((evt) => {
     let controlMap = controlMapRef.current;
@@ -88,8 +88,8 @@ function DriveControlPanel({ drivingMode, mbot }) {
     }
     else {
       driveCmd.current.vx = stickData.y * speed / 10000;
-      driveCmd.current.vy = -stickData.x * speed / 10000;
-      driveCmd.current.wz = 0;
+      driveCmd.current.vy = 0;
+      driveCmd.current.wz = -stickData.x * speed / 10000;
     }
   }, [keyActive, joyActive, setJoyActive, speed]);
 
